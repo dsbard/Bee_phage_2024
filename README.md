@@ -22,12 +22,6 @@ This folder contains scripts and code used for cleaning up the output produced b
 ### vOTU_table_construction
 This folder contains raw results, code, and dataframes used for constructing the vOTU table which is used through out the publication. The "master" metadata table is also held in this folder. This is a usefull starting point if you are trying to recreate any of the analysis performed in this manuscript. More information regarding individual files can be found in the folder.
 
-### sum_data
-In short, this is the data used to build many components of Figure 2. This folder contans basic summary info regarding:
-- The assembly of our read data into contigs
-- the number of phage we recovered in each sample
-- The code used to calculate these data. 
-
 ### calc_kmers
 This is the code (and raw data) used to produce the read library complexity results visualized in Figure 2.
 
