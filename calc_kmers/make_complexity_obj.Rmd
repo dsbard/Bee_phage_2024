@@ -1,0 +1,31 @@
+---
+title: "Make_kmer_complexity_plot"
+author: "DLS"
+date: "2023-12-18"
+output: html_document
+---
+
+```{r}
+library(tidyverse)
+```
+
+
+```{r}
+freq.dir = "/Users/dinosbardellati/Desktop/PhD_stuff/projects/Bee_phage/5kb/cleaned_code/calc_kmers/out/signatures"
+freq.files = list.files(path = freq.dir, pattern = "*.freq", full.names = T)
+freq.files
+
+sampleid = list.files(path = freq.dir, pattern = "*freq", full.names = F) %>% 
+  str_remove(".(2|3|5)1.freq")
+sampleid
+```
+
+```{r}
+freq.list = lapply(freq.files, read.table, sep = ",", header = F, col.names = c("Occurrence", "Count","Kmer"))
+names(freq.list) = sampleid
+
+freq.df = plyr::ldply(freq.list, function(x) x) %>% 
+  mutate("SampleID" = .id)
+
+saveRDS(freq.df, "/Users/dinosbardellati/Desktop/PhD_stuff/projects/Bee_phage/5kb/cleaned_code/first_plots")
+```

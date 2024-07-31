@@ -1,0 +1,310 @@
+---
+title: "Sample_method_analysis_plots"
+author: "DLS"
+date: "2024-06-03"
+output: html_document
+---
+
+# Load packages
+```{r}
+library(stringr)
+library(cowplot)
+library(Rmisc)
+library(lmerTest)
+library(dplyr)
+library(reshape2)
+library(ggplot2)
+library(forcats)
+```
+# Temperate vs lytic phage
+```{r}
+##### Make relative abundance table ##### 
+# Read in vOTU table
+vOTU_table = readRDS("/Users/dinosbardellati/Desktop/PhD_stuff/projects/Bee_phage/5kb/reviewer_comments/coverM_redo/output_files/5kb_phage_normalized.RDS")
+# Read in meta table + clean a bit
+meta = read.csv("/Users/dinosbardellati/Desktop/PhD_stuff/projects/Bee_phage/5kb/reviewer_comments/coverage_table/Bee_phage_meta.csv", header = T)
+## Drop negatives
+meta_virome = meta[meta$Sample %in% rownames(vOTU_table),]
+
+# Reorder vOTU table to match meta
+phage_df_order = vOTU_table[order(match(rownames(vOTU_table), meta_virome$Sample)),]
+# Lastly, convert vOTU table to relative abundances
+phage_df_rela = (phage_df_order/rowSums(phage_df_order))*100
+rowSums(phage_df_rela)
+##### Done ##### 
+
+##### Find out who is temperate vs lytic ##### 
+# Read in txt file with the names of phage which encode integrases (as predicted by BACPHLIP)
+temperate_phage_names = read.csv("/Users/dinosbardellati/Desktop/PhD_stuff/projects/Bee_phage/5kb/reviewer_comments/life_style_pred/temperate_phage_names.csv", header = F)
+temperate_phage_names = temperate_phage_names$V1
+
+# How many virome IDed phage or temperate?
+all_phage_names = colnames(vOTU_table)
+virome_IDed_phage = all_phage_names[grepl("virome", all_phage_names)]
+temperate_virome = temperate_phage_names[grepl("virome", temperate_phage_names)]
+(length(temperate_virome)/length(virome_IDed_phage))*100
+# 93/301
+# 30.89701%
+
+# repeat with total IDed phage
+total_IDed_phage = all_phage_names[grepl("total", all_phage_names)]
+temperate_total = temperate_phage_names[grepl("total", temperate_phage_names)]
+(length(temperate_total)/length(total_IDed_phage))*100
+# 80/176
+# 45.45455%
+
+# Make presence absence
+phage_df_pres_abs = phage_df_order
+phage_df_pres_abs[phage_df_pres_abs > 0] = 1 
+# Calculate the total number of phage in each sample
+total_n_phage = rowSums(phage_df_pres_abs)
+# Calculate the total number of temperate phage in each sample
+total_n_temp = rowSums(phage_df_pres_abs[,colnames(phage_df_pres_abs) %in% temperate_phage_names])
+# Real quick, how many total temperate phage were in out final (normalized) vOTU table?
+dim(phage_df_pres_abs[,colnames(phage_df_pres_abs) %in% temperate_phage_names])
+# 160
+## So, we IDed a total of 160 phage from out "high quality" phage genomies. 
+## of these 173 total temperate phage, 160 were present in our "active" phage vOTU table
+
+# Calculate the percent of temp phage in each sample
+perc_temp = data.frame("sample" = rownames(phage_df_pres_abs), "perc_temp" = (total_n_temp/total_n_phage)*100)
+# Merge with meta 
+perc_temp_df = perc_temp %>% 
+  left_join(meta_virome, join_by(sample == Sample)) %>%
+  mutate(Bee_type = paste(Bee, Type, sep = " "))
+
+# plot it up
+## make a pal
+bee_col_pal = palette(value = c("#B3CDE3",
+                                "#1F78B4", 
+                                "#FED9A6",
+                                "#FF7F00"))
+## make the actual plot
+perc_temp_plot = ggplot(perc_temp_df, aes(x = Bee_type, y = perc_temp, fill = Bee_type)) +
+  geom_boxplot() + 
+  scale_fill_manual(values = alpha(bee_col_pal, alpha = 0.75)) +
+  theme_minimal() +
+  theme(plot.title = element_text(hjust = 0.5), 
+        text = element_text(size = 25), 
+        legend.position = "none") +
+  xlab("") + 
+  ylab("Percent temperate")
+
+pdf("/Users/dinosbardellati/Desktop/PhD_stuff/projects/Bee_phage/5kb/reviewer_comments/coverM_redo/output_files/percent_temperate.pdf", width = 12.75, height = 8.25)
+perc_temp_plot
+dev.off()
+
+# temperate phage across sample types
+summarySE(perc_temp_df, measurevar = "perc_temp", groupvars = "Type")
+
+summarySE(perc_temp_df, measurevar = "perc_temp", groupvars = "Bee_type")
+
+#            Bee_type N perc_temp        sd       se        ci
+# 1  Bumble bee Total 9  27.77762  8.669314 2.889771  6.663825
+# 2 Bumble bee Virome 3  10.89744 12.804477 7.392668 31.808085
+# 3   Honey bee Total 9  50.94914 15.272507 5.090836 11.739488
+# 4  Honey bee Virome 3  37.72091  3.549720 2.049432  8.817994
+
+# Test it
+perc_temp_lmer = lmer(perc_temp ~ Bee*Type + (1|Hive_ID), data = perc_temp_df)
+summary(perc_temp_lmer)
+#                         Estimate Std. Error      df t value Pr(>|t|)    
+# (Intercept)               28.960      3.891  20.000   7.443 3.49e-07 ***
+# BeeHoney bee              21.337      5.503  20.000   3.878 0.000936 ***
+# TypeVirome               -18.063      7.782  20.000  -2.321 0.030958 *  
+# BeeHoney bee:TypeVirome    3.393     11.005  20.000   0.308 0.760999    
+
+
+##### Done ##### 
+
+##### Build a plotable df (and then plot it!) #####
+# Subset relative abund df to just the phage w/ integrases
+temperate_phage_abund = phage_df_rela[,colnames(phage_df_rela) %in% temperate_phage_names]
+dim(temperate_phage_abund)
+# Create new col w/ sample IDs
+temperate_phage_abund$sample = rownames(temperate_phage_abund)
+# Add in meta data + melt
+temperate_phage_meta_melt = meta_virome %>%
+  dplyr::select(Sample, Type, Bee, Hive_ID, clean_names) %>%
+  left_join(temperate_phage_abund, join_by(Sample == sample)) %>% 
+  melt(id = c("Sample", "Bee", "Type", "Hive_ID", "clean_names")) %>%
+  mutate(Type = factor(Type, levels=c("Virome", "Total"))) %>%
+  mutate(Bee = factor(Bee, levels=c("Honey bee", "Bumble bee"))) %>%
+  mutate(Order = as.numeric(str_split_fixed(Sample, "_", 3)[,3]))
+
+# Then summarize the melted df 
+temperate_plot = data.frame(temperate_phage_meta_melt %>%
+  dplyr::group_by(Sample, Bee, Type, Hive_ID, Order, clean_names) %>%
+  dplyr::summarise(sum = sum(value)))
+
+# add a col for non-integrases encoding bacteria 
+temperate_plot$Lytic = 100 - temperate_plot$sum
+colnames(temperate_plot)[7] = "temperate"
+temperate_plot_melt = melt(temperate_plot, id = c("Sample", "Bee", "Type", "Order", "Hive_ID", "clean_names"))
+
+# plot it
+temp_col = palette(value = c("#c9c7c7", "#7a7a7a"))
+stacked_temp = ggplot(temperate_plot_melt, aes(x = reorder(clean_names, Order), y = value, fill = variable)) +
+  geom_bar(stat = "identity") + 
+  facet_wrap(~Bee+Type, scales = "free_x") + 
+  scale_fill_manual("", values = temp_col, labels=c('Temperate', 'Lytic')) +
+  theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust=1, color = "black", size = 10),
+        strip.text = element_text(size = 15, color = "black"),
+        legend.position = "top") +
+  xlab("") + ylab("Relative abundance") + 
+  guides(fill=guide_legend(override.aes=list(shape=17)))
+
+temp_legend = plot_grid(get_legend(ggplot(temperate_plot_melt, aes(x = reorder(Sample, Order), y = value, fill = variable)) +
+  geom_bar(stat = "identity") + 
+  facet_wrap(~Bee+Type, scales = "free_x") + 
+  scale_fill_manual("Life style", values = temp_col, labels=c('Temperate', 'Lytic')) +
+  xlab("") +
+  ylab("Relative abundance") +
+  theme_minimal() +
+  theme(plot.title = element_text(hjust = 0.5), 
+        text = element_text(size = 30), 
+        axis.text.x = element_text(angle = 45, vjust = 1, hjust=1),
+        legend.position = "left")))
+
+# Calculate some stats
+summarySE(temperate_plot, groupvars = c("Bee", "Type"), measurevar = "temperate")
+# run a test
+temp_lmer = lmer(temperate ~ Bee*Type + (1|Hive_ID), data = temperate_plot)
+summary(temp_lmer)
+
+#                         Estimate Std. Error      df t value Pr(>|t|)   
+# (Intercept)               19.023      8.440  17.364   2.254  0.03740 * 
+# BeeBumble bee            -18.561     11.936  17.364  -1.555  0.13799   
+# TypeTotal                 34.318      9.032  16.000   3.800  0.00157 **
+# BeeBumble bee:TypeTotal  -20.918     12.773  16.000  -1.638  0.12101    
+```
+# set up other
+```{r}
+# vOTU table
+vOTU_table = readRDS("/Users/dinosbardellati/Desktop/PhD_stuff/projects/Bee_phage/5kb/reviewer_comments/coverM_redo/output_files/5kb_phage_normalized.RDS")
+# meta data table
+meta = read.csv("/Users/dinosbardellati/Desktop/PhD_stuff/projects/Bee_phage/5kb/reviewer_comments/coverage_table/Bee_phage_meta.csv", header = T)
+# Drop note section cause its long, ugly, and we dont need it
+meta = meta[!colnames(meta) == "Notes"]
+# Subset to just virome samples
+meta_virome = meta[meta$Sample %in% rownames(vOTU_table),]
+
+# Normalize phage counts
+# Reorder phage df to match metadata
+phage_df_order = vOTU_table[order(match(rownames(vOTU_table), meta_virome$Sample)),]
+# Double check that this worked
+
+# make a pres/absence table
+phage_df_pres_abs = phage_df_order
+phage_df_pres_abs[phage_df_pres_abs > 0] = 1 
+
+# Lastly, convert vOTU table to relative abundances
+phage_df_rela = (phage_df_order/rowSums(phage_df_order))*100
+rowSums(phage_df_rela)
+```
+## Density
+```{r}
+# Subset pres/abs by sample type
+total = phage_df_pres_abs[rownames(phage_df_pres_abs) %in% 
+                                subset(meta_virome$Sample, 
+                                       meta_virome$Type == "Total"),]
+virome = phage_df_pres_abs[rownames(phage_df_pres_abs) %in% 
+                                subset(meta_virome$Sample, 
+                                       meta_virome$Type == "Virome"),]
+# Drop phage which are not present
+total_pres = total[colSums(total) > 0]
+virome_pres = virome[colSums(virome) > 0]
+# Then extract names
+total_pres_names = names(total_pres)
+virome_pres_names = names(virome_pres)
+# Calculate overlap between viromes and total metagenomes
+overlap = virome_pres_names[virome_pres_names %in% total_pres_names]
+# subset realtive abundance table to just phage found in viromes
+virome_melt = phage_df_rela %>%
+  filter(rownames(phage_df_rela) %in% 
+           subset(meta_virome$Sample, meta_virome$Type == "Virome")) %>% # subset to just virome samples
+  melt() %>% # melt the df
+  filter(variable %in% virome_pres_names) %>% # subset to just the phage present in viromes
+  mutate(variable = as.character(variable)) %>% # coerce to character, otherwise group_by breaks
+  group_by(variable) %>% # group by phage
+  dplyr::summarize(avg = mean(value)) %>% # and then average accross all three honey bee virome samples
+  arrange(desc(avg)) # order the output highest to lowest average abundance
+
+# now, use an ifelse to asign "groups" to each of these phage (virome only vs both)
+virome_melt$group = ifelse(virome_melt$variable %in% overlap, "Total", "Virome_only")
+# then plot
+palette = palette(value = c("#d73027", "#4575b4"))
+density = ggplot(virome_melt, aes(x = avg, fill = group)) + 
+  geom_density(alpha = 0.75, col = "white") +
+  scale_y_continuous() +
+  scale_x_log10(labels = scales::trans_format("log10", scales::math_format(10^.x)), limits = c(10e-6,100)) +
+  theme_minimal() +
+  xlab("Mean Relative Abund. (log10)") +
+  ylab("Density") +
+  scale_fill_manual(values = palette, name = "", labels = c("Total and Virome", "Virome Only")) +
+   theme(legend.position = "top")
+```
+# Abundance occupancy plots
+```{r}
+phage_df_rela$Sample = row.names(phage_df_rela)
+phage_df_rela_melt = melt(phage_df_rela, id = "Sample")
+
+occupancy = meta_virome %>%
+  dplyr::select(Sample, Type, Bee) %>%
+  left_join(phage_df_rela_melt, join_by(Sample == Sample)) %>%
+  filter(Type == "Virome") %>%
+  group_by(Bee, variable) %>%
+  dplyr::summarise(Occupancy = sum(value > 0), 
+            Occupancy2 = sum(value > 0)/n() * 100,
+            MeanRelAbundance = mean(value)) %>%
+  filter(Occupancy > 0)
+# Then add a col based on whether or not sample appeared in both viromes and total metagenomes
+occupancy$Both = ifelse(occupancy$variable %in% overlap, "Both", "Virome_only")
+# Plot it!
+occupancy_plot = ggplot(occupancy, aes(MeanRelAbundance, Occupancy)) + 
+  geom_jitter(data = filter(occupancy, Both == "Virome_only"), 
+              col = "#4575b4", fill = "#4575b4", shape = 21, size = 2.5, alpha = 0.5) + 
+  geom_jitter(data = filter(occupancy, Both == "Both"), 
+              col = "white", fill = "#d73027", shape = 21, size = 2.5) +
+  scale_x_log10(labels = scales::trans_format("log10", scales::math_format(10^.x))) +
+  xlab("Mean Relative Abund. (log10)") +
+  ylab("Occupancy\n(Number of Samples)") + 
+  theme_minimal() 
+
+occupancy_2 = occupancy %>% 
+  mutate(Both = fct_relevel(Both, "Virome_only")) %>% 
+  group_by(Both, Occupancy) %>% 
+  dplyr::count() %>% 
+  ungroup() %>% 
+  mutate(pOTU = n/sum(n) * 100)
+
+palette = palette(value = c("#d73027", "#4575b4"))
+bin_perc = ggplot(occupancy_2, aes(Occupancy, pOTU, fill = Both, color = Both)) +
+  geom_bar(stat = "identity", color = "white", size = 0.25) +
+  scale_fill_manual(values = rev(palette)) +
+  coord_flip() +
+  ylab("% vOTUs") +
+  theme_minimal() +
+  theme(text = element_text(size = 15), 
+        #axis.text.y = element_blank(),
+        axis.title.y = element_blank(),
+        panel.border = element_blank(),
+        legend.position = "none")
+```
+# combine em!
+```{r}
+legends = cowplot::plot_grid(cowplot::get_legend(stacked_temp + theme(text = element_text(size = 25))), 
+                             cowplot::get_legend(density + theme(text = element_text(size = 30))))
+
+top = cowplot::plot_grid(stacked_temp + theme(legend.position = "none"), 
+                         density + theme(legend.position = "none"), 
+                         labels = c("A","B"), label_size = 20, nrow = 1)
+
+bottom = cowplot::plot_grid(occupancy_plot, bin_perc, ncol = 2, labels = c("C", "D"), label_size = 20)
+
+cowplot::plot_grid(legends, top, bottom, nrow = 3, rel_heights = c(1, 10, 7), label_size = 20)
+
+pdf("/Users/dinosbardellati/Desktop/PhD_stuff/projects/Bee_phage/5kb/reviewer_comments/coverM_redo/output_files/occ_abund.pdf", width = 16.5, height = 12.75)
+cowplot::plot_grid(legends, top, bottom, nrow = 3, rel_heights = c(1, 10, 7), label_size = 20)
+dev.off()
+```

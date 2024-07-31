@@ -1,0 +1,3 @@
+Pseudomonas_GCA_001042905.1_spacer_0	virome_phage_43	72.973	37	10	0	4	40	4629	4665	0.76	28.5
+Pseudomonas_GCA_001042905.1_spacer_1	virome_phage_758	94.737	19	1	0	16	34	14139	14157	0.76	28.5
+Pseudomonas_GCA_001042905.1_spacer_1	total_phage_98	94.737	19	1	0	6	24	18633	18651	0.76	28.5

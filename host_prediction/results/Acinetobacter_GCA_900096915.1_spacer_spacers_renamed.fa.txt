@@ -1,0 +1,13 @@
+Acinetobacter_GCA_900096915.1_spacer_1	virome_phage_734	81.481	27	5	0	2	28	62665	62639	0.25	28.5
+Acinetobacter_GCA_900096915.1_spacer_1	virome_phage_842	94.444	18	1	0	6	23	6809	6826	0.76	26.9
+Acinetobacter_GCA_900096915.1_spacer_1	virome_phage_753	90.000	20	2	0	12	31	45489	45508	0.76	26.9
+Acinetobacter_GCA_900096915.1_spacer_1	total_phage_95	94.444	18	1	0	10	27	82270	82253	0.76	26.9
+Acinetobacter_GCA_900096915.1_spacer_1	total_phage_488	76.667	30	7	0	2	31	1414	1385	0.76	26.9
+Acinetobacter_GCA_900096915.1_spacer_2	virome_phage_870	87.500	24	3	0	3	26	5343	5366	0.084	30.1
+Acinetobacter_GCA_900096915.1_spacer_2	virome_phage_848	83.333	24	4	0	8	31	24280	24257	0.76	26.9
+Acinetobacter_GCA_900096915.1_spacer_2	virome_phage_794	90.000	20	2	0	11	30	11653	11634	0.76	26.9
+Acinetobacter_GCA_900096915.1_spacer_2	virome_phage_770	86.364	22	3	0	5	26	17348	17327	0.76	26.9
+Acinetobacter_GCA_900096915.1_spacer_2	virome_phage_768	86.364	22	3	0	4	25	47321	47342	0.76	26.9
+Acinetobacter_GCA_900096915.1_spacer_3	virome_phage_55	86.364	22	3	0	1	22	18755	18776	0.76	26.9
+Acinetobacter_GCA_900096915.1_spacer_4	virome_phage_839	84.000	25	4	0	7	31	17812	17788	0.25	28.5
+Acinetobacter_GCA_900096915.1_spacer_4	virome_phage_2335	84.000	25	4	0	7	31	18517	18541	0.25	28.5

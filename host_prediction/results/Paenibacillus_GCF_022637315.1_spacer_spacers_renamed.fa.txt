@@ -1,0 +1,5 @@
+Paenibacillus_GCF_022637315.1_spacer_0	virome_phage_758	86.957	23	3	0	12	34	23627	23605	0.31	28.5
+Paenibacillus_GCF_022637315.1_spacer_0	virome_phage_56	94.444	18	1	0	11	28	14377	14394	0.94	26.9
+Paenibacillus_GCF_022637315.1_spacer_0	virome_phage_2	83.333	24	4	0	1	24	37006	36983	0.94	26.9
+Paenibacillus_GCF_022637315.1_spacer_1	virome_phage_16	79.310	29	6	0	3	31	18368	18340	0.38	28.5
+Paenibacillus_GCF_022637315.1_spacer_2	virome_phage_870	87.500	24	3	0	3	26	29190	29167	0.13	30.1

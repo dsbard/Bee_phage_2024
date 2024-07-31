@@ -1,0 +1,13 @@
+Bacillus_GCF_021654935.1_spacer_0	total_phage_294	87.500	24	3	0	7	30	55193	55170	0.13	30.1
+Bacillus_GCF_021654935.1_spacer_0	total_phage_233	87.500	24	3	0	7	30	79980	79957	0.13	30.1
+Bacillus_GCF_021654935.1_spacer_0	virome_phage_876	90.476	21	2	0	9	29	21578	21558	0.38	28.5
+Bacillus_GCF_021654935.1_spacer_0	total_phage_788	86.957	23	3	0	5	27	6057	6035	0.38	28.5
+Bacillus_GCF_021654935.1_spacer_2	virome_phage_756	84.000	25	4	0	2	26	43165	43189	0.31	28.5
+Bacillus_GCF_021654935.1_spacer_2	total_phage_12	86.957	23	3	0	7	29	20558	20536	0.31	28.5
+Bacillus_GCF_021654935.1_spacer_2	virome_phage_744	76.667	30	7	0	1	30	41463	41492	0.94	26.9
+Bacillus_GCF_021654935.1_spacer_2	total_phage_451	80.769	26	5	0	9	34	2374	2399	0.94	26.9
+Bacillus_GCF_021654935.1_spacer_3	virome_phage_949	81.481	27	5	0	1	27	16779	16753	0.38	28.5
+Bacillus_GCF_021654935.1_spacer_3	virome_phage_741	94.737	19	1	0	18	36	33721	33703	0.38	28.5
+Bacillus_GCF_021654935.1_spacer_3	virome_phage_71	77.419	31	7	0	1	31	37578	37548	0.38	28.5
+Bacillus_GCF_021654935.1_spacer_3	virome_phage_738	94.737	19	1	0	13	31	110271	110289	0.38	28.5
+Bacillus_GCF_021654935.1_spacer_3	virome_phage_68	84.000	25	4	0	5	29	3113	3137	0.38	28.5

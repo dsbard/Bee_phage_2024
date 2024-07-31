@@ -1,0 +1,16 @@
+Apibacter_GCF_004014855.1_spacer_0	virome_phage_2322	95.238	21	1	0	9	29	9669	9689	0.028	31.7
+Apibacter_GCF_004014855.1_spacer_0	virome_phage_754	94.737	19	1	0	4	22	33988	34006	0.25	28.5
+Apibacter_GCF_004014855.1_spacer_0	virome_phage_748	84.000	25	4	0	1	25	73008	73032	0.25	28.5
+Apibacter_GCF_004014855.1_spacer_0	virome_phage_743	94.737	19	1	0	5	23	71472	71454	0.25	28.5
+Apibacter_GCF_004014855.1_spacer_0	total_phage_188	81.481	27	5	0	2	28	16294	16268	0.25	28.5
+Apibacter_GCF_004014855.1_spacer_0	virome_phage_878	83.333	24	4	0	3	26	23597	23620	0.76	26.9
+Apibacter_GCF_004014855.1_spacer_0	virome_phage_818	94.444	18	1	0	7	24	2416	2433	0.76	26.9
+Apibacter_GCF_004014855.1_spacer_0	virome_phage_2260	83.333	24	4	0	3	26	1766	1789	0.76	26.9
+Apibacter_GCF_004014855.1_spacer_0	total_phage_92	90.000	20	2	0	10	29	35647	35666	0.76	26.9
+Apibacter_GCF_004014855.1_spacer_0	total_phage_795	90.000	20	2	0	10	29	27533	27552	0.76	26.9
+Apibacter_GCF_004014855.1_spacer_0	total_phage_605	94.444	18	1	0	10	27	5586	5603	0.76	26.9
+Apibacter_GCF_004014855.1_spacer_0	virome_phage_750	83.333	24	4	0	3	26	17380	17357	0.76	26.9
+Apibacter_GCF_004014855.1_spacer_0	virome_phage_745	83.333	24	4	0	1	24	40526	40503	0.76	26.9
+Apibacter_GCF_004014855.1_spacer_0	virome_phage_2310	94.444	18	1	0	10	27	13766	13749	0.76	26.9
+Apibacter_GCF_004014855.1_spacer_1	virome_phage_739	90.000	20	2	0	1	20	104017	103998	0.76	26.9
+Apibacter_GCF_004014855.1_spacer_2	virome_phage_855	78.571	28	6	0	2	29	8940	8967	0.76	26.9

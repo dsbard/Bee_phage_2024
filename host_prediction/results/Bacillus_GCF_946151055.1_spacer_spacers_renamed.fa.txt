@@ -1,0 +1,5 @@
+Bacillus_GCF_946151055.1_spacer_0	total_phage_247	86.364	22	3	0	4	25	4822	4801	0.76	26.9
+Bacillus_GCF_946151055.1_spacer_1	total_phage_927	90.909	22	2	0	7	28	56208	56229	0.084	30.1
+Bacillus_GCF_946151055.1_spacer_1	total_phage_104	90.000	20	2	0	5	24	24668	24687	0.76	26.9
+Bacillus_GCF_946151055.1_spacer_2	total_phage_927	90.909	22	2	0	7	28	56208	56229	0.084	30.1
+Bacillus_GCF_946151055.1_spacer_2	total_phage_104	90.000	20	2	0	5	24	24668	24687	0.76	26.9

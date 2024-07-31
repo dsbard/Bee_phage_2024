@@ -1,0 +1,413 @@
+---
+title: "Bacterial community analyses"
+output: html_notebook
+editor_options: 
+chunk_output_type: inline
+---
+
+# qPCR results
+## Load in data
+```{r}
+# qPCR results
+qPCR_results = read.csv("/Users/dinosbardellati/Desktop/PhD_stuff/projects/Bee_phage/5kb/reviewer_comments/bacterial_community/qPCR_results/11.30.23_Cq_Results.csv", header = T)
+# Map of qPCR plate
+qPCR_map = read.csv("/Users/dinosbardellati/Desktop/PhD_stuff/projects/Bee_phage/5kb/reviewer_comments/bacterial_community/qPCR_results/qPCR_plate_long.csv", header = T)
+# Associated metadata
+meta = read.csv("/Users/dinosbardellati/Desktop/PhD_stuff/projects/Bee_phage/5kb/reviewer_comments/coverage_table/Bee_phage_meta.csv")
+```
+## Combine components into a new dataset 
+```{r}
+# fix names
+colnames(qPCR_map) = c("well", "ID")
+# remove empty wells
+qPCR_map_clean = qPCR_map[qPCR_map$ID != "0",]
+
+# merge dfs
+library(dplyr)
+qPCR_final = qPCR_results %>%
+  right_join(qPCR_map_clean, join_by("Well" == "well")) %>%
+  left_join(meta, join_by("ID" == "Seq_lab")) %>%
+  dplyr::select(Well, Cq, ID, Bee)
+```
+## Calc averages and Plot it
+```{r}
+# drop neg
+qPCR_final_no_neg = qPCR_final[!qPCR_final$ID == "NEG",]
+# drop B05 (it has an NaN reading =/)
+qPCR_final_clean = qPCR_final_no_neg[!qPCR_final_no_neg$Well == "B05",]
+# Calc averages
+library(Rmisc)
+avg_cq = summarySE(data = qPCR_final_clean, measurevar = "Cq", groupvars = "ID")
+# add bee back in, convert to copy number, and plot
+avg_cq_final = avg_cq %>%
+  left_join(meta, join_by("ID" == "Seq_lab")) %>%
+  dplyr::select(Cq, ID, Bee) %>%
+  mutate(copy_number = 10^((-.301205*Cq)+10.512048 +3))
+  # using Shawn Christensen's standard curve equation to convert to copy number
+  # equation: log(copyn)= -.301205(Cq)+10.512048 +3
+library(RColorBrewer)
+bee_col_pal = palette(value = c("#B3CDE3", 
+                                "#FED9A6"))
+qpcr_plot = ggplot(avg_cq_final, aes(Bee, copy_number, fill = Bee)) +
+  geom_boxplot() + 
+  geom_jitter() +
+  scale_y_log10(labels = scales::unit_format(unit = "Million", 
+                                                  scale = 1e-06, 
+                                                  accuracy = 1)) +
+  ylab("16S copy number") +
+  xlab("Bee") +
+  scale_fill_manual(values = bee_col_pal) +
+  theme_minimal() + 
+  ggtitle("qPCR results") +
+  theme(plot.title = element_text(hjust = 0.5),
+        axis.title = element_text(size = 12.5),
+        axis.text.x = element_text(size = 10),
+        axis.text.y = element_text(size = 10),
+        legend.position = "none")
+
+
+# Test it!
+t.test(copy_number ~ Bee, 
+       alternative = "two.sided",
+       mu = 0,
+       data = avg_cq_final)
+# t = -3.5434, df = 9.1329, p-value = 0.006136
+```
+
+# (species level) Rarefaction and alpha diversity
+## Load packages and read in data
+```{r}
+library(phyloseq)
+library(ggplot2)
+library(dplyr)
+library(MicEco)
+
+# Load Kraken2/Bracken results
+merged_metagenomes = import_biom("/Users/dinosbardellati/Desktop/PhD_stuff/projects/Bee_phage/5kb/reviewer_comments/bacterial_community/kraken/bee_S.biom")
+# Meta data
+meta = read.csv("/Users/dinosbardellati/Desktop/PhD_stuff/projects/Bee_phage/5kb/reviewer_comments/coverage_table/Bee_phage_meta.csv")
+```
+## Set up phyloseq object
+```{r}
+# Clean up the bracken supplied taxa ames
+merged_metagenomes@tax_table@.Data = substring(merged_metagenomes@tax_table@.Data, 4)
+colnames(merged_metagenomes@tax_table@.Data) = c("Kingdom", "Phylum", "Class", "Order", "Family", "Genus", "Species")
+
+# Set up metadata + sam data
+## Extract sample data IDs
+sam_data = data.frame(merged_metagenomes@sam_data)
+sam_data$fixed = gsub(pattern = "_bracken_species", 
+                 replacement =  "", 
+                 x = sam_data$Id)
+## Combine meta data with sample data
+sam_data_full = meta %>%
+  filter(!Type == "Negative") %>%
+  dplyr::select(Sample, Seq_lab, Type, Bee, Hive_ID, clean_names) %>%
+  mutate("Bee_Type" = paste(Bee, Type, sep = " ")) %>% 
+  right_join(sam_data, join_by("Seq_lab" == "fixed"))
+rownames(sam_data_full) = sam_data_full$Id
+
+# Replace sample_data with new meta+sam df
+merged_metagenomes@sam_data = sample_data(sam_data_full)
+```
+## clean the phyloseq object
+```{r}
+# We will first subset to just the bacteria
+bacto = subset_taxa(merged_metagenomes, Kingdom=="Bacteria")
+# 5419 "species"
+
+# Lets start by visualizing the distrobution of reads accross all our samples
+# density plot for abund cut off
+bacto_sum = data.frame(rowSums(bacto@otu_table))
+colnames(bacto_sum) = c("abund")
+ggplot(bacto_sum, aes(abund)) + 
+  geom_density() +
+  xlim(-500, 2000) + 
+  geom_vline(xintercept = 500)
+# Kracken2/Bracken can create a lot of suprious/false positive hits
+## (Reads are mapped to genomes via 31-mers. If they hit, that genome is considered present)
+## (The abundance values being reported in the OTU table is the number of reads mapped to a particular genome [represented by a unique identifier])
+## (Organisms with low abundance [i.e. a low number of reads mapped] may or may not be present)
+## To remove these, we will apply abundance thresholds to our data
+
+# Use the MicEco tool kit to apply an abundance threshold
+## We will only consider taxa which have a min of 500 reads mapped to them in at least 3 samples
+## This can also be done with relative abundance if we want
+bacto_clean = ps_prune(bacto, 
+                       min.samples = 3, 
+                       min.reads = 500) 
+# This leaves us with 1030 taxa
+# convert to rela
+bacto_rela = transform_sample_counts(bacto_clean, function(x) (x / sum(x))*100)
+```
+## Lets visualize sampling effort + alpha diversity + rarefaction curves
+```{r}
+## get alpha diversity
+bacto_div = estimate_richness(bacto_clean)
+bacto_div$sample = bacto_clean@sam_data$Sample
+bacto_div$Bee = bacto_clean@sam_data$Bee
+# combine with meta data
+bacto_div_clean = bacto_div %>%
+  dplyr::select(sample, Bee, Observed, Chao1, Shannon) 
+# plot
+bee_col_pal = palette(value = c("#B3CDE3", 
+                                "#FED9A6"))
+nOTU = ggplot(bacto_div_clean, aes(Bee, Observed, fill = Bee)) + 
+  geom_boxplot() +
+  ggtitle("Number of Species") +
+  theme_minimal() +
+  theme(plot.title = element_text(hjust = 0.5),
+        axis.title = element_text(size = 12.5),
+        axis.text.x = element_text(size = 10),
+        axis.text.y = element_text(size = 10),
+        legend.position = "none") +
+  scale_fill_manual(values = bee_col_pal)
+
+shan = ggplot(bacto_div_clean, aes(Bee, Shannon, fill = Bee)) + 
+  geom_boxplot() +
+  ggtitle("Shannon's diversity") +
+  theme_minimal() + 
+  scale_fill_manual(values = bee_col_pal) +
+  theme(plot.title = element_text(hjust = 0.5),
+        axis.title = element_text(size = 12.5),
+        axis.text.x = element_text(size = 10),
+        axis.text.y = element_text(size = 10),
+        legend.position = "none")
+alpha_div = gridExtra::grid.arrange(nOTU,shan, nrow = 1)
+# differencves in alpha diversity!
+
+# test
+# richness
+t.test(Observed ~ Bee, data = bacto_div_clean)
+# t = -6.2687, df = 13.775, p-value = 2.219e-05
+# Shannon
+t.test(Shannon ~ Bee, data = bacto_div_clean)
+# t = 5.1123, df = 11.701, p-value = 0.0002777
+```
+## Rarefaction curves to ensure bacterial communities sampled deep enough
+```{r}
+# Check out "bacterial sampling depth"
+read_depth = data.frame("depth" = colSums(bacto_clean@otu_table))
+read_depth$Bee = bacto_clean@sam_data$Bee
+ggplot(read_depth, aes(Bee, depth, fill = Bee)) + 
+  geom_boxplot() + 
+  scale_y_log10()
+# Looks like there are some differences in read depth between samples 
+# Specifically, bumble bees were sequenced less deeply compared to honey bees
+## I believe this is partly due to the bacterial communities in bumble bees being lower in density
+## Results in more sequencing space being miss-allocated o host bee genome
+
+# To rarefy?
+quickRareCurve <- function (x, step = 1, sample, xlab = "Sample Size",
+  ylab = "Species", label = TRUE, col, lty, max.cores = T, nCores = 1, ...)
+{
+    require(parallel)
+    x <- as.matrix(x)
+    if (!identical(all.equal(x, round(x)), TRUE))
+        stop("function accepts only integers (counts)")
+    if (missing(col))
+        col <- par("col")
+    if (missing(lty))
+        lty <- par("lty")
+    tot <- rowSums(x) # calculates library sizes
+    S <- specnumber(x) # calculates n species for each sample
+    if (any(S <= 0)) {
+        message("empty rows removed")
+        x <- x[S > 0, , drop = FALSE]
+        tot <- tot[S > 0]
+        S <- S[S > 0]
+    } # removes any empty rows
+    nr <- nrow(x) # number of samples
+    col <- rep(col, length.out = nr)
+    lty <- rep(lty, length.out = nr)
+    # parallel mclapply
+    # set number of cores
+    mc <- getOption("mc.cores", ifelse(max.cores, detectCores(), nCores))
+    message(paste("Using ", mc, " cores"))
+    out <- mclapply(seq_len(nr), mc.cores = mc, function(i) {
+        n <- seq(1, tot[i], by = step)
+        if (n[length(n)] != tot[i])
+            n <- c(n, tot[i])
+        drop(rarefy(x[i, ], n))
+    })
+    Nmax <- sapply(out, function(x) max(attr(x, "Subsample")))
+    Smax <- sapply(out, max)
+     plot(c(1, max(Nmax)), c(1, max(Smax)), xlab = xlab, ylab = ylab,
+       type = "n", ...)
+    if (!missing(sample)) {
+      abline(v = sample)
+      rare <- sapply(out, function(z) approx(x = attr(z, "Subsample"),
+         y = z, xout = sample, rule = 1)$y)
+      abline(h = rare, lwd = 0.5)
+      }
+    for (ln in seq_along(out)) {
+      N <- attr(out[[ln]], "Subsample")
+      lines(N, out[[ln]], col = col[ln], lty = lty[ln], ...)
+      }
+    if (label) {
+      ordilabel(cbind(tot, S), labels = rownames(x), ...)
+      }
+    invisible(out)
+}
+otu = t(bacto_clean@otu_table)
+class(otu) = "matrix"
+rare_curve = quickRareCurve(otu, label = F, step = 500,
+               col = ifelse(sample_data(bacto)$Bee == "Honey bee", "#FF7F00", "#1F78B4"), 
+               main = "Species level rarefaction curve")
+# Rarefaction curve shows that, even though bubmle bees generate fewer reads all together, species accumulations till plateus -- meaning that an increased sampling depth probably wont lead to new species being recovered
+```
+
+# Combine all plots
+## Stacked bar plot
+```{r}
+# Plot genus level bar
+## Collapse at genus level
+genus_level = tax_glom(bacto_rela, taxrank = "Genus")
+# make genus names otu names
+taxa_names(genus_level) = genus_level@tax_table[,6]
+# Select top 10 taxa
+names = names(sort(rowSums(genus_level@otu_table), decreasing = TRUE)[1:10])
+# pull out just the OTU table
+genus_table = data.frame(t(otu_table(genus_level)))
+# subset to just top taxa
+genus_table_top_10 = genus_table[,colnames(genus_table) %in% names]
+# add an "other" group
+genus_table_top_10$Other = 100 - rowSums(genus_table_top_10)
+# Add other data
+sample_data = data.frame(sample_data(genus_level))
+# check orders
+rownames(genus_table_top_10) == rownames(sample_data)
+# they match
+# join
+top_10_gen_meta = cbind(sample_data[colnames(sample_data) %in% c("Type", "Bee", "clean_names")], genus_table_top_10)
+# Melt + subset
+genus_melt = melt(top_10_gen_meta, id = c("Type", "Bee", "clean_names"))
+# reset factor levels so "other" is top
+genus_melt$variable = factor(x = genus_melt$variable, 
+                             levels =c(
+                             "Other",
+                             "Bartonella"
+                             "Gilliamella",
+                             "Frischella",
+                             "Xanthomonas",
+                             "Snodgrassella",
+                             "Bifidobacterium",
+                             "Mycobacterium",
+                             "Lactobacillus",
+                             "Bombilactobacillus",
+                             "Enterococcus"))
+
+# make a color pallet
+bacto_pal = palette(value = c(
+  "#a6cee3",
+  "#1f78b4",
+  "#b2df8a",
+  "#33a02c",
+  "#fb9a99",
+  "#e31a1c",
+  "#fdbf6f",
+  "#ff7f00",
+  "#cab2d6",
+  "#6a3d9a",
+  "#969696"))
+# make the plot
+library(RColorBrewer)
+stacked_bar = ggplot(genus_melt, aes(clean_names, value, fill = variable)) + 
+  geom_bar(stat = "identity", col = "black") +
+  facet_wrap(~Bee, scales = "free_x") +
+  scale_fill_manual(values = bacto_pal) +
+  theme_minimal() + 
+  ylab("Relative abundance") +
+  xlab("Bee") +
+  theme(plot.title = element_text(hjust = 0.5),
+        axis.title = element_text(size = 12.5),
+        axis.text.x = element_text(size = 10, angle = 35, vjust = 1, hjust=1),
+        axis.text.y = element_text(size = 10),
+        legend.position = "right")
+```
+## Combine
+```{r}
+legends = cowplot::plot_grid(cowplot::get_legend(qpcr_plot))
+left = cowplot::plot_grid(qpcr_plot + theme(legend.position = "none"),
+                         labels = c("A"), label_size = 20, nrow = 1, rel_widths = c(5, 1))
+right = cowplot::plot_grid(nOTU + theme(legend.position = "none"),
+                           shan + theme(legend.position = "none"),
+                           ncol = 1, labels = c("B", "C", ""), label_size = 20)
+
+top = cowplot::plot_grid(left, right, legends,
+                         nrow = 1, rel_heights = c(5, 5, 1.5), rel_widths = c(5, 5, 1), label_size = 20)
+
+bottom = cowplot::plot_grid(stacked_bar, 
+                            labels = c("D"), label_size = 20)
+
+cowplot::plot_grid(top, bottom,
+                   ncol = 1, rel_heights = c(2, 1.5))
+```
+
+
+# Beta diversity mantel test
+```{r}
+meta_phy = data.frame(sample_data(bacto_clean))
+otu_phy = otu
+vOTU = readRDS("/Users/dinosbardellati/Desktop/PhD_stuff/projects/Bee_phage/5kb/reviewer_comments/coverage_table/5kb_phage_normalized.RDS")
+
+rownames(otu_phy) = meta_phy$Sample
+# subset to just total
+vOTU_total = vOTU[rownames(vOTU) %in% rownames(otu_phy),]
+# reorder bacto df
+otu_phy_order = otu_phy[order(match(rownames(otu_phy), rownames(vOTU_total))),]
+# double check
+rownames(vOTU_total) == rownames(otu_phy_order)
+# calc dist mat
+vOTU_dis = vegdist(x = vOTU_total, method = "bray")
+otu_dis = vegdist(x = otu_phy_order, method = "bray")
+
+bray_mantel = mantel(xdis = otu_dis, ydis = vOTU_dis, method = "pearson", strata = meta_phy$Hive_ID)
+summary(bray_mantel)
+
+vOTU_dis_mat = as.matrix(vOTU_dis)
+vOTU_dis_tab = melt(vOTU_dis_mat)[melt(upper.tri(vOTU_dis_mat))$value,]
+colnames(vOTU_dis_tab) = c("sample_1", "sample_2", "viral_dissimilarity")
+
+otu_dis_mat = as.matrix(otu_dis)
+otu_dis_tab = melt(otu_dis_mat)[melt(upper.tri(otu_dis_mat))$value,]
+colnames(otu_dis_tab) = c("sample_1", "sample_2", "bacterial_dissimilarity")
+
+mantel_plot = data.frame("Sample_1" = vOTU_dis_tab$sample_1,
+                         "Sample_2" = vOTU_dis_tab$sample_2,
+                         "Viral_dist" = vOTU_dis_tab$viral_dissimilarity,
+                         "Bacterial_dist" = otu_dis_tab$bacterial_dissimilarity)
+
+mantel_plot$type = ifelse(grepl("MEL", mantel_plot$Sample_1) & grepl("MEL", mantel_plot$Sample_2), "Honey-Honey",
+                          ifelse(grepl("IMP", mantel_plot$Sample_1) & grepl("IMP", mantel_plot$Sample_2), "Bumble-Bumble", "Inter"))
+
+bacto_viral_mantel_plot = ggplot(mantel_plot, aes(Bacterial_dist, Viral_dist, col = type)) + 
+  geom_point() +                                      
+  stat_smooth(method = "lm", 
+              formula = y ~ x, 
+              geom = "smooth") +
+  theme_minimal() +
+  ggtitle("Pairwise Bray-Curtis dissimilarity of bacterial communities\nis positively associated with viral community dissimilarity")
+
+
+# Run linear regressopms 
+bumble_bumble = glm(Viral_dist ~ Bacterial_dist, data = mantel_plot, subset = type == "Bumble-Bumble")
+summary(bumble_bumble)
+with(summary(bumble_bumble), 1 - deviance/null.deviance)
+# R2 = 0.4822513
+#                Estimate Std. Error t value Pr(>|t|)    
+# (Intercept)     0.01853    0.04789   0.387    0.701    
+# Bacterial_dist  0.48956    0.08699   5.628 2.63e-06 ***
+
+honey_honey = glm(Viral_dist ~ Bacterial_dist, data = mantel_plot, subset = type == "Honey-Honey")
+summary(honey_honey)
+with(summary(honey_honey), 1 - deviance/null.deviance)
+# R2 = 0.03648468
+#                Estimate Std. Error t value Pr(>|t|)    
+# (Intercept)     0.90283    0.03952  22.847   <2e-16 ***
+# Bacterial_dist  0.08639    0.07613   1.135    0.264    
+
+# Not sig, so end here
+inter = glm(Viral_dist ~ Bacterial_dist, data = mantel_plot, subset = type == "Inter")
+summary(inter)
+```

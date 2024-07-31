@@ -1,0 +1,255 @@
+---
+title: "Make_first_plots"
+author: "DLS"
+date: "2023-12-18"
+output: html_document
+---
+# Load meta data
+```{r}
+library(dplyr)
+# read in meta
+meta = read.csv("/Users/dinosbardellati/Desktop/PhD_stuff/projects/Bee_phage/5kb/cleaned_code/vOTU_table_construction/Bee_phage_meta.csv")
+# Make a new table for read_count info 
+read_count = meta %>%
+  filter(!Type == "Negative") %>%
+  dplyr::select(Sample, Type, Bee, raw_read_count, filtered_read_count, Hive_ID) %>%
+  mutate("read_loss" = raw_read_count - filtered_read_count) %>%
+  mutate("perc_loss" = ((raw_read_count - filtered_read_count)/raw_read_count)*100) %>%
+  mutate("Bee_Type" = paste(Bee, Type, sep = "\n"))
+
+# Count total number of reads in different samples
+# Sum of reads
+read_count %>%
+  group_by(Bee_Type) %>%
+  summarise(raw_sum = sum(raw_read_count), filter_count = sum(filtered_read_count))
+
+# mean +/- SE
+library(Rmisc)
+summarySE(read_count, 
+          measurevar = "filtered_read_count", 
+          groupvars = "Bee_Type")
+```
+# Make sequencing depth plot
+```{r}
+# plot em
+library(RColorBrewer)
+library(ggplot2)
+bee_col_pal = palette(value = c("#B3CDE3",
+                                "#1F78B4", 
+                                "#FED9A6",
+                                "#FF7F00"))
+seq_depth = ggplot(read_count, aes(x = Bee_Type, y = filtered_read_count, fill = Bee_Type)) +
+  geom_boxplot() +
+  ggtitle("") + 
+  theme_minimal() +
+  scale_y_continuous(labels = scales::unit_format(unit = "M", scale = 1e-06, accuracy = 1)) +
+  scale_color_manual(values = bee_col_pal) + 
+  scale_fill_manual(values = alpha(bee_col_pal, alpha = 0.75)) +
+  theme(plot.title = element_text(hjust = 0.5),
+        axis.text.x = element_text(size=7.5),
+        legend.position = "none") + 
+  xlab("") + 
+  ylab("Number of read pairs\npassing filter")
+
+library(lme4)
+library(emmeans)
+library(multcomp)
+# Pre filter
+pre_filter_lmer = lmer(raw_read_count ~ Bee*Type + (1|Hive_ID), data = read_count)
+summary(pre_filter_lmer)
+x = emmeans(pre_filter_lmer, c("Bee", "Type"))
+pairs(x, adjust="bonferroni")
+
+# post filter
+post_filter_lmer = lmer(filtered_read_count ~ Bee*Type + (1|Hive_ID), data = read_count)
+summary(post_filter_lmer)
+x = emmeans(post_filter_lmer, c("Bee", "Type"))
+pairs(x, adjust="bonferroni")
+
+# Supplemental_1
+total_reads = ggplot(read_count, aes(x = Bee_Type, y = raw_read_count, fill = Bee_Type)) +
+  geom_boxplot() +
+  geom_jitter() +
+  ggtitle("") + 
+  theme_minimal() +
+  scale_y_continuous(labels = scales::unit_format(unit = "M", scale = 1e-06, accuracy = 1)) +
+  scale_color_manual(values = bee_col_pal) + 
+  scale_fill_manual(values = alpha(bee_col_pal, alpha = 0.75)) +
+  theme(plot.title = element_text(hjust = 0.5), 
+        legend.position = "none") + 
+  xlab("") + 
+  ylab("Total number of read pairs\ngenerated")
+
+```
+# kmer "Complexity" plot
+```{r}
+# load kmer data
+kmer_df = readRDS("/Users/dinosbardellati/Desktop/PhD_stuff/projects/Bee_phage/5kb/cleaned_code/plots/sequencing_overview/kmer_freq.RDS")
+
+# Subset meta (to make brain happy) and join with kmer_df
+kmer_meta = meta %>%
+  filter(!Type == "Negative") %>%
+  dplyr::select(Seq_lab, Type, Bee, Hive_ID) %>%
+  mutate("Bee_Type" = paste(Bee, Type, sep = " ")) %>% 
+  right_join(kmer_df, join_by("Seq_lab" == "SampleID"))
+# Plot as frequency 
+complex = ggplot(kmer_meta, aes(x = Occurrence, y = Count, col = Bee_Type)) +
+  geom_line(alpha = 0.75) +
+  theme_minimal() +
+  scale_y_log10(labels = scales::trans_format("log10", scales::math_format(10^.x))) +
+  scale_x_log10(labels = scales::trans_format("log10", scales::math_format(10^.x))) +
+  scale_color_manual(values = bee_col_pal) +
+  xlab("K-mer Occurence (log10)") + 
+  ylab("Number of k-mers\n(log10)")  +
+  theme(plot.title = element_text(hjust = 0.5),
+        axis.text.x = element_text(size=7.5),
+        legend.position = "none")
+  
+# y-intercept for bumble bee viromes is lower than the other samples
+## This suggests that bumble bee viromes have a decreased number of singletons (k-mers which have an occurance of 1) relative to honey bee viromes and both total metageomes
+# The x-intercepts for bumble bee viromes are also lower than the other samples
+## This indicates that bumble bee viromes tended to have k-mers with lower abundances (relative to honey bee viromes and all total metagenomes)
+
+# Select just singleton kmers
+kmer_singleton = meta %>%
+  filter(!Type == "Negative") %>%
+  dplyr::select(Seq_lab, Type, Bee, Hive_ID) %>%
+  mutate("Bee_Type" = paste(Bee, Type, sep = "\n")) %>% 
+  right_join(kmer_df, join_by("Seq_lab" == "SampleID")) %>% 
+  filter(Occurrence == 1)
+  
+single = ggplot(data = kmer_singleton, aes(x = Bee_Type, y = Count, fill = Bee_Type)) +
+  geom_boxplot() + 
+  theme_minimal() +
+  scale_fill_manual(values = bee_col_pal)  +
+ scale_y_continuous(labels = scales::unit_format(unit = "k", scale = 1e-03, accuracy = 1)) +
+  xlab("") +
+  ylab("Number of unique\nk-mers") +
+  theme(plot.title = element_text(hjust = 0.5),
+        axis.text.x = element_text(size=7.5),
+        legend.position = "none")
+
+# singleton kmer significance
+kmer_singleton_lmer = lmer(Count ~ Bee*Type + (1|Hive_ID), data = kmer_singleton)
+summary(kmer_singleton_lmer)
+x = emmeans(kmer_singleton_lmer, c("Bee", "Type"))
+pairs(x, adjust="bonferroni")
+```
+# Load in data
+```{r}
+# Load in data
+## Total number of assemblies
+num_assemblies = read.csv("/Users/dinosbardellati/Desktop/PhD_stuff/projects/Bee_phage/5kb/cleaned_code/plots/sequencing_overview/total_assemblies.csv", header = F)
+colnames(num_assemblies) = c("Sample", "n_assembelies")
+## Number of assemblies >= 5kb
+num_5kb = read.csv("/Users/dinosbardellati/Desktop/PhD_stuff/projects/Bee_phage/5kb/cleaned_code/plots/sequencing_overview/5kb_assemblies.csv", header = F)
+colnames(num_5kb) = c("Sample", "num_5kb")
+num_5kb$Sample = gsub(pattern = ".fasta", replacement = "", x = num_5kb$Sample)
+## number of viral assemblies
+num_viral = read.csv("/Users/dinosbardellati/Desktop/PhD_stuff/projects/Bee_phage/5kb/reviewer_comments/counts/phage_count.csv", header = F)
+colnames(num_viral) = c("Sample", "n_viral")
+# all assemblies
+all_sizes = read.csv("/Users/dinosbardellati/Desktop/PhD_stuff/projects/Bee_phage/5kb/cleaned_code/plots/sequencing_overview/sample_all_assembly_size.csv", header = F)
+colnames(all_sizes) = c("Sample", "all_seq_size")
+all_sizes$Sample = gsub(pattern = ".*\a", replacement = "", x = all_sizes$Sample)
+# sizes of all >5kb assemblies 
+sizes = read.csv("/Users/dinosbardellati/Desktop/PhD_stuff/projects/Bee_phage/5kb/cleaned_code/plots/sequencing_overview/sample_assembly_size.csv", header = F)
+colnames(sizes) = c("Sample", "seq_size_5kb")
+```
+# Combine this data into bigger dfs
+```{r}
+# Add to meta_data
+contig_plot_df = meta %>%
+  filter(Type != "Negative") %>% # Drop negatives 
+  mutate("Bee_Type" = paste(Bee, Type, sep = " ")) %>% # make interaction term
+  dplyr::select(Tube_label, Hive_ID, Type,Bee, Seq_lab, filtered_read_count, Bee_Type, clean_names) %>% # Select just the important data
+  left_join(num_assemblies, by = join_by("Seq_lab" == "Sample")) %>% # add in total number of assemblies
+  left_join(num_5kb, by = join_by("Seq_lab" == "Sample")) %>% # add in number of contigs >= 10kb
+  left_join(num_viral, by = join_by("Seq_lab" == "Sample")) %>% # add in number of viral seqs
+  mutate(perc_viral = (n_viral/num_5kb)*100) %>% # calc the percent of total assemblies which are viral
+  left_join(all_sizes, by = join_by("Seq_lab" == "Sample")) %>% # add in all contig sizes
+  filter(all_seq_size >= 1000) # filter to only contigs bigger than 999bp (drops number of points from 4417197 to 1094166 -- helps A LOT with visualization)
+# Percent of phage plot
+assembly_overview = ggplot(contig_plot_df, aes(x = reorder(clean_names, Tube_label), y = all_seq_size)) +
+  geom_jitter(alpha = 0.5, shape = 16, size = 1, color = "gray25") +
+  ylab("Contig Length (log10)") +
+  xlab("Samples") +
+  scale_y_log10(labels = scales::unit_format(unit = "kb", scale = 1e-3, accuracy = 1)) +
+  facet_grid(Bee_Type ~ ., scale = "free", space = "free") +
+  geom_point(aes(clean_names, y = 775, color = perc_viral), shape = 15, size = 7) +
+    geom_point(aes(clean_names, y = 600, color = perc_viral), shape = 15, size = 7) +
+  geom_point(aes(clean_names, y = 550, color = perc_viral), shape = 15, size = 7) +
+  scale_color_gradient(name = "Percent Viral Contigs", low = "#eafae8", high = "#228B22") +
+  
+  # geom_label(aes(clean_names, y = 775, label = perc_viral)) +
+  geom_hline(yintercept = 5000, color = "red", linetype = 2) +
+  coord_flip() +
+  theme_bw() + 
+  theme(text = element_text(size = 15),
+        #axis.title.y = element_blank(),
+        panel.border = element_blank(),
+        legend.position = "top")
+
+contig_plot_df %>% dplyr::select(clean_names, perc_viral) %>% unique()
+
+# Calc average percent viral for each sample type
+perc_phage_df = meta %>%
+  filter(Type != "Negative") %>% # Drop negatives 
+  mutate("Bee_Type" = paste(Bee, Type, sep = " ")) %>% # make interaction term
+  dplyr::select(Tube_label, Hive_ID, Type,Bee, Seq_lab, filtered_read_count, Bee_Type) %>% # Select just the important data
+  left_join(num_assemblies, by = join_by("Seq_lab" == "Sample")) %>% # add in total number of assemblies
+  left_join(num_5kb, by = join_by("Seq_lab" == "Sample")) %>% # add in number of contigs >= 10kb
+  left_join(num_viral, by = join_by("Seq_lab" == "Sample")) %>% # add in number of viral seqs
+  mutate(perc_viral = (n_viral/num_5kb)*100)
+
+# Count number of phage seqs in viromes
+perc_phage_df %>%
+  dplyr::group_by(Bee_Type) %>%
+  dplyr::summarise(sum = sum(n_viral))
+
+# Express as percent
+summarySE(perc_phage_df, 
+          groupvars = "Bee_Type",
+          measurevar = "perc_viral")
+
+perc_phage_df %>%
+  dplyr::group_by(Bee_Type) %>%
+  dplyr::summarise(sum = sum(n_viral))
+```
+# make a legend
+```{r}
+legend.p = meta %>% 
+  filter(!Type == "Negative") %>%
+  mutate("Bee_Type" = paste(Bee, Type, sep = " ")) %>% 
+  ggplot(aes(Bee_Type, 1, col = Bee_Type)) +
+  geom_point(size = 5) +
+  scale_color_manual(values = bee_col_pal) +
+  theme_bw() +
+  theme(text = element_text(size = 15),
+        legend.title = element_blank(),
+        legend.position = "top") +
+  guides(col = guide_legend(nrow = 2))
+
+```
+# Put it together
+```{r}
+library(cowplot)
+left <- cowplot::plot_grid(seq_depth, complex, single, ncol = 1, rel_heights = c(5, 5, 5),
+                           labels = c("A", "B", "C"), label_size = 15)
+
+right <- cowplot::plot_grid(assembly_overview + theme(legend.position = "none"), ncol = 1, rel_heights = c(9),
+                            labels = c("D"), label_size = 15)
+
+main = cowplot::plot_grid(left, right, nrow = 1, rel_widths = c(2.5,5))
+
+leg = plot_grid(cowplot::get_legend(legend.p), cowplot::get_legend(assembly_overview),
+                ncol = 2)
+
+combo = cowplot::plot_grid(leg, main, nrow = 2, rel_heights = c(1,10))
+
+full_plot = cowplot::plot_grid(left, right, nrow = 1, rel_widths = c(2,5))
+
+pdf(file = "/Users/dinosbardellati/Desktop/PhD_stuff/projects/Bee_phage/5kb/reviewer_comments/plots/Final_plots/Figure_2_2.pdf", width = 12.5, height = 11)
+cowplot::plot_grid(leg, main, nrow = 2, rel_heights = c(1,10))
+dev.off()
+```

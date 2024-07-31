@@ -1,0 +1,62 @@
+---
+title: "decorate_network"
+author: "DLS"
+date: "2024-06-02"
+output: html_document
+---
+# Load in data
+```{r}
+# Making a pretty network
+# Read in network
+ref = read.table("/Users/dinosbardellati/Desktop/PhD_stuff/projects/Bee_phage/5kb/reviewer_comments/network/ref/c1.ntw",
+         header = F)
+
+# Breifly, we want to add a column that tells what study a particular phage came from 
+library(dplyr)
+ref = ref %>%
+  mutate(Study = ifelse(grepl("rosso", ref$V1), "bonilla-rosso", 
+                        ifelse(grepl("deboutte", ref$V1), "deboutte", 
+                               ifelse(grepl("busby", ref$V1), "busby", 
+                                      ifelse(grepl("total|virome", ref$V1), "sbardellati", "reference")))))
+# Fix names
+colnames(ref) = c("Source", "Target", "Weight", "Study")
+ref$Source = gsub(pattern = "annotate_", "", x = ref$Source)
+ref$Target = gsub(pattern = "annotate_", "", x = ref$Target)
+```
+
+# Add Host assignments, taxonomy, and clusters
+```{r}
+# Load additional data
+## host prediction
+phage_host = read.csv("/Users/dinosbardellati/Desktop/PhD_stuff/projects/Bee_phage/5kb/reviewer_comments/crispr/all_phage_host_table.csv",
+                      header = T)
+## Taxonomy prediction
+phage_tax = read.csv("/Users/dinosbardellati/Desktop/PhD_stuff/projects/Bee_phage/5kb/reviewer_comments/taxonomy/viral_taxonomy.csv", header = T, row.names = 1)
+## Cluster assignment
+clusters = read.csv("/Users/dinosbardellati/Desktop/PhD_stuff/projects/Bee_phage/5kb/reviewer_comments/network/no_ref/genome_by_genome_overview.csv")
+clusters$Genome = gsub("annotate_", "", x = clusters$Genome)
+clusters_clean = clusters %>% 
+  dplyr::select(Genome, VC)
+
+# Add data to network object
+ref_host_tax_clust = ref %>%
+  left_join(phage_host, join_by(Source == phage)) %>%
+  left_join(phage_tax, join_by(Source == vOTU)) %>%
+  left_join(clusters_clean, join_by(Source == Genome))
+```
+
+# Add an aditional column that is Host_study
+## This will allow us to "grey out" previously described phage in our eventual network
+```{r}
+final_df = ref_host_tax_clust %>%
+  mutate(host_study = paste(host, Study, sep = "_"))
+
+```
+
+# Export df
+```{r}
+# export it
+write.csv(final_df, "/Users/dinosbardellati/Desktop/PhD_stuff/projects/Bee_phage/5kb/reviewer_comments/network/ref_network_object.csv",
+          row.names = F,
+          quote = F)
+```

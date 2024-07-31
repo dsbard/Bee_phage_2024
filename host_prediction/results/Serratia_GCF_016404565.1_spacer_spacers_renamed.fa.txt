@@ -1,0 +1,13 @@
+Serratia_GCF_016404565.1_spacer_0	virome_phage_878	76.667	30	7	0	3	32	28843	28814	0.76	26.9
+Serratia_GCF_016404565.1_spacer_0	virome_phage_825	90.000	20	2	0	10	29	32230	32211	0.76	26.9
+Serratia_GCF_016404565.1_spacer_1	total_phage_122	87.500	24	3	0	8	31	18902	18925	0.084	30.1
+Serratia_GCF_016404565.1_spacer_1	virome_phage_82	94.737	19	1	0	12	30	24382	24400	0.25	28.5
+Serratia_GCF_016404565.1_spacer_1	virome_phage_884	90.000	20	2	0	12	31	27203	27222	0.76	26.9
+Serratia_GCF_016404565.1_spacer_1	virome_phage_858	83.333	24	4	0	4	27	11764	11741	0.76	26.9
+Serratia_GCF_016404565.1_spacer_1	virome_phage_852	90.000	20	2	0	13	32	6517	6536	0.76	26.9
+Serratia_GCF_016404565.1_spacer_1	virome_phage_850	90.000	20	2	0	8	27	22805	22786	0.76	26.9
+Serratia_GCF_016404565.1_spacer_1	virome_phage_841	94.444	18	1	0	12	29	14098	14081	0.76	26.9
+Serratia_GCF_016404565.1_spacer_1	virome_phage_828	90.000	20	2	0	8	27	18899	18880	0.76	26.9
+Serratia_GCF_016404565.1_spacer_1	virome_phage_8	86.364	22	3	0	8	29	81924	81903	0.76	26.9
+Serratia_GCF_016404565.1_spacer_1	virome_phage_2297	83.333	24	4	0	4	27	2539	2562	0.76	26.9
+Serratia_GCF_016404565.1_spacer_1	virome_phage_12	86.364	22	3	0	3	24	8179	8200	0.76	26.9

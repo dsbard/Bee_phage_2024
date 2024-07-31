@@ -1,0 +1,14 @@
+Pseudomonas_GCA_017582645.1_spacer_0	virome_phage_67	95.455	22	1	0	6	27	31742	31721	0.009	33.3
+Pseudomonas_GCA_017582645.1_spacer_0	virome_phage_84	90.909	22	2	0	6	27	29494	29473	0.084	30.1
+Pseudomonas_GCA_017582645.1_spacer_0	virome_phage_2350	90.909	22	2	0	6	27	8423	8444	0.084	30.1
+Pseudomonas_GCA_017582645.1_spacer_1	virome_phage_50	86.364	22	3	0	5	26	38777	38756	0.76	26.9
+Pseudomonas_GCA_017582645.1_spacer_2	virome_phage_83	81.481	27	5	0	1	27	10060	10086	0.25	28.5
+Pseudomonas_GCA_017582645.1_spacer_2	virome_phage_2296	86.957	23	3	0	5	27	10271	10249	0.25	28.5
+Pseudomonas_GCA_017582645.1_spacer_2	virome_phage_906	90.000	20	2	0	13	32	22338	22357	0.76	26.9
+Pseudomonas_GCA_017582645.1_spacer_2	virome_phage_871	100.000	16	0	0	10	25	2783	2798	0.76	26.9
+Pseudomonas_GCA_017582645.1_spacer_2	virome_phage_78	86.364	22	3	0	3	24	13446	13425	0.76	26.9
+Pseudomonas_GCA_017582645.1_spacer_2	virome_phage_75	83.333	24	4	0	1	24	29026	29003	0.76	26.9
+Pseudomonas_GCA_017582645.1_spacer_2	virome_phage_63	80.769	26	5	0	7	32	18923	18948	0.76	26.9
+Pseudomonas_GCA_017582645.1_spacer_2	virome_phage_57	100.000	16	0	0	5	20	34502	34517	0.76	26.9
+Pseudomonas_GCA_017582645.1_spacer_2	virome_phage_202	86.364	22	3	0	10	31	8434	8455	0.76	26.9
+Pseudomonas_GCA_017582645.1_spacer_2	total_phage_174	86.364	22	3	0	10	31	10638	10659	0.76	26.9

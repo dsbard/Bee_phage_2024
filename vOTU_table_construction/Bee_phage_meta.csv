@@ -1,0 +1,34 @@
+Tube_label,Sample,Hive_ID,Type,Bee,Collection_date,DNA_extraction_date,Notes,Seq_lab,DNA_concentration_qubit,raw_read_count,filtered_read_count,clean_names
+1,B_IMP_1,Bombus_1,Virome,Bumble bee,11/10/22,11/11/22,Commercial colony of Bombus impatiens supplied by Koppert. Colony was in our possession for a while prior to sample collection.,1_B_IMP,3.62,16290191,8626280,BB1_Virome
+2,B_IMP_2,Bombus_1,Negative,NA,11/10/22,11/11/22,Commercial colony of Bombus impatiens supplied by Koppert. Colony was in our possession for a while prior to sample collection.,2_NEG,too low,NA,NA,
+3,B_IMP_3,Bombus_1,Total,Bumble bee,11/10/22,11/11/22,Commercial colony of Bombus impatiens supplied by Koppert. Colony was in our possession for a while prior to sample collection.,3_B_IMP,34,18012355,6077829,BB1_Total_1
+4,B_IMP_4,Bombus_1,Total,Bumble bee,11/10/22,11/11/22,Commercial colony of Bombus impatiens supplied by Koppert. Colony was in our possession for a while prior to sample collection.,4_B_IMP,80,20396344,7740955,BB1_Total_2
+5,B_IMP_5,Bombus_1,Total,Bumble bee,11/10/22,11/11/22,Commercial colony of Bombus impatiens supplied by Koppert. Colony was in our possession for a while prior to sample collection.,5_B_IMP,93,17111892,6143529,BB1_Total_3
+6,B_IMP_6,NA,Negative,NA,NA,NA,,NA,NA,NA,NA,
+7,A_MEL_7,Apis_40,Virome,Honey bee,1/30/23,1/31/23,Colony of honey bees managed by UC Davis. Not fed artificial pollen or nectar. Not treated with thymol or other chemical. Housed at the student farms.,7_A_MEL,0.77,16140050,14682731,HB1_Virome
+8,A_MEL_8,Apis_40,Total,Honey bee,1/30/23,1/31/23,Colony of honey bees managed by UC Davis. Not fed artificial pollen or nectar. Not treated with thymol or other chemical. Housed at the student farms.,8_A_MEL,98,14994146,7224162,HB1_Total_1
+9,A_MEL_9,Apis_40,Total,Honey bee,1/30/23,1/31/23,Colony of honey bees managed by UC Davis. Not fed artificial pollen or nectar. Not treated with thymol or other chemical. Housed at the student farms.,9_A_MEL,91,18460856,10084439,HB1_Total_2
+10,A_MEL_10,Apis_40,Total,Honey bee,1/30/23,1/31/23,Colony of honey bees managed by UC Davis. Not fed artificial pollen or nectar. Not treated with thymol or other chemical. Housed at the student farms.,10_A_MEL,129,17529827,11404553,HB1_Total_3
+11,A_MEL_11,NA,Negative,NA,NA,NA,,NA,,NA,NA,
+12,A_MEL_12,Apis_37,Virome,Honey bee,2/6/23,2/7/23,Colony of honey bees managed by UC Davis. Not fed artificial pollen or nectar. Not treated with thymol or other chemical. Housed at the student farms. One varrora mite found.,12_A_MEL,1.03,17472771,16797020,HB2_Virome
+13,A_MEL_13,Apis_37,Total,Honey bee,2/6/23,2/7/23,Colony of honey bees managed by UC Davis. Not fed artificial pollen or nectar. Not treated with thymol or other chemical. Housed at the student farms. One varrora mite found.,13_A_MEL,67,16250445,9874008,HB2_Total_1
+14,A_MEL_14,Apis_37,Total,Honey bee,2/6/23,2/7/23,Colony of honey bees managed by UC Davis. Not fed artificial pollen or nectar. Not treated with thymol or other chemical. Housed at the student farms. One varrora mite found.,14_A_MEL,39,12737365,5532503,HB2_Total_2
+15,A_MEL_15,Apis_37,Total,Honey bee,2/6/23,2/7/23,Colony of honey bees managed by UC Davis. Not fed artificial pollen or nectar. Not treated with thymol or other chemical. Housed at the student farms. One varrora mite found.,15_A_MEL,103,19499815,11102171,HB2_Total_3
+16,A_MEL_16,NA,Negative,NA,NA,NA,,NA,,NA,NA,
+17,A_MEL_17,Bee_haven,Virome,Honey bee,2/13/23,2/14/23,Colony of honey bees managed by UC Davis. Not fed artificial pollen or nectar. Not treated with thymol or other chemical. Housed at the bee haven. One varrora mite found.,17_A_MEL,0.185,16401909,15213673,HB3_Virome
+18,A_MEL_18,Bee_haven,Total,Honey bee,2/13/23,2/14/23,Colony of honey bees managed by UC Davis. Not fed artificial pollen or nectar. Not treated with thymol or other chemical. Housed at the bee haven. One varrora mite found.,18_A_MEL,66,21155204,9081205,HB3_Total_1
+19,A_MEL_19,Bee_haven,Total,Honey bee,2/13/23,2/14/23,Colony of honey bees managed by UC Davis. Not fed artificial pollen or nectar. Not treated with thymol or other chemical. Housed at the bee haven. One varrora mite found.,19_A_MEL,66,16094480,6829327,HB3_Total_2
+20,A_MEL_20,Bee_haven,Total,Honey bee,2/13/23,2/14/23,Colony of honey bees managed by UC Davis. Not fed artificial pollen or nectar. Not treated with thymol or other chemical. Housed at the bee haven. One varrora mite found.,20_A_MEL,38,18236842,6041639,HB3_Total_3
+21,A_MEL_21,NA,Negative,NA,NA,NA,,NA,,NA,NA,
+22,B_IMP_22,Bombus_2,Virome,Bumble bee,2/28/23,3/1/23,Commercial colony of Bombus impatiens supplied by Koppert. Tubes were barrowed from Dr. Pavankumar -- unsure of how DNA free they were,22_B_IMP,0.693,21240379,4087937,BB2_Virome
+23,B_IMP_23,Bombus_2,Negative,NA,2/28/23,3/1/23,Commercial colony of Bombus impatiens supplied by Koppert. Tubes were barrowed from Dr. Pavankumar -- unsure of how DNA free they were,23_NEG,0.0034,NA,NA,
+24,B_IMP_24,Bombus_2,Total,Bumble bee,2/28/23,3/1/23,Commercial colony of Bombus impatiens supplied by Koppert. Tubes were barrowed from Dr. Pavankumar -- unsure of how DNA free they were,24_B_IMP,97,17671315,5155005,BB2_Total_1
+25,B_IMP_25,Bombus_2,Total,Bumble bee,2/28/23,3/1/23,Commercial colony of Bombus impatiens supplied by Koppert. Tubes were barrowed from Dr. Pavankumar -- unsure of how DNA free they were,25_B_IMP,211,16479347,5201880,BB2_Total_2
+26,B_IMP_26,Bombus_2,Total,Bumble bee,2/28/23,3/1/23,Commercial colony of Bombus impatiens supplied by Koppert. Tubes were barrowed from Dr. Pavankumar -- unsure of how DNA free they were,26_B_IMP,215,19001887,6150596,BB2_Total_3
+27,B_IMP_27,NA,Negative,NA,NA,NA,,,,NA,NA,
+28,B_IMP_28,Bombus_3,Virome,Bumble bee,3/6/23,3/7/23,Commercial colony of Bombus impatiens supplied by Koppert. Tubes were washed with soap and bleach by me. Unsure of how DNA free they were/,28_B_IMP,0.176,18966607,3745788,BB3_Virome
+29,B_IMP_29,Bombus_3,Negative,NA,3/6/23,3/7/23,Commercial colony of Bombus impatiens supplied by Koppert. Tubes were washed with soap and bleach by me. Unsure of how DNA free they were/,29_NEG,too low,NA,NA,
+30,B_IMP_30,Bombus_3,Total,Bumble bee,3/6/23,3/7/23,Commercial colony of Bombus impatiens supplied by Koppert. Tubes were washed with soap and bleach by me. Unsure of how DNA free they were/,30_B_IMP,71,13463789,5938733,BB3_Total_1
+31,B_IMP_31,Bombus_3,Total,Bumble bee,3/6/23,3/7/23,Commercial colony of Bombus impatiens supplied by Koppert. Tubes were washed with soap and bleach by me. Unsure of how DNA free they were/,31_B_IMP,79,13144607,5000886,BB3_Total_2
+32,B_IMP_32,Bombus_3,Total,Bumble bee,3/6/23,3/7/23,Commercial colony of Bombus impatiens supplied by Koppert. Tubes were washed with soap and bleach by me. Unsure of how DNA free they were/,32_B_IMP,158,12746455,5234026,BB3_Total_3
+33,B_IMP_33,NA,Negative,NA,NA,NA,NA,NA,NA,NA,NA,

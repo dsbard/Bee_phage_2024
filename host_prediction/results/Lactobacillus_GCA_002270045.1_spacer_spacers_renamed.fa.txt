@@ -1,0 +1,5 @@
+Lactobacillus_GCA_002270045.1_spacer_0	virome_phage_848	79.310	29	6	0	2	30	9224	9252	0.44	28.5
+Lactobacillus_GCA_002270045.1_spacer_0	virome_phage_54	79.310	29	6	0	7	35	13927	13955	0.44	28.5
+Lactobacillus_GCA_002270045.1_spacer_0	total_phage_795	77.419	31	7	0	2	32	34665	34695	0.44	28.5
+Lactobacillus_GCA_002270045.1_spacer_1	virome_phage_839	77.419	31	7	0	4	34	15058	15088	0.44	28.5
+Lactobacillus_GCA_002270045.1_spacer_1	virome_phage_2335	77.419	31	7	0	4	34	21271	21241	0.44	28.5

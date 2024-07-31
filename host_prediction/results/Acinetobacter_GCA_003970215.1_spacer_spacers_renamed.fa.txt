@@ -1,0 +1,4 @@
+Acinetobacter_GCA_003970215.1_spacer_0	virome_phage_779	86.957	23	3	0	11	33	23354	23376	0.38	28.5
+Acinetobacter_GCA_003970215.1_spacer_2	virome_phage_7	91.304	23	2	0	10	32	127092	127114	0.042	31.7
+Acinetobacter_GCA_003970215.1_spacer_2	virome_phage_823	90.476	21	2	0	13	33	3427	3447	0.38	28.5
+Acinetobacter_GCA_003970215.1_spacer_2	virome_phage_743	75.758	33	8	0	2	34	61424	61392	0.38	28.5

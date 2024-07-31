@@ -1,0 +1,271 @@
+---
+title: "alpha_beta_div"
+author: "DLS"
+date: "2024-05-28"
+output: html_document
+---
+
+# Load + fix data
+```{r}
+# load in the normalized and abundance trimmed df
+phage_df_norm = readRDS("/Users/dinosbardellati/Desktop/PhD_stuff/projects/Bee_phage/5kb/reviewer_comments/coverM_redo/output_files/5kb_phage_normalized.RDS")
+# Abundance of phage is expressed as "number of phage sequences per 1 million reads"
+# i.e. The number of times we were able to constuct a particular phage sequence given 1 million reads
+
+# Read in meta data
+meta = read.csv("/Users/dinosbardellati/Desktop/PhD_stuff/projects/Bee_phage/5kb/reviewer_comments/coverage_table/Bee_phage_meta.csv")
+# Drop note section cause its long, ugly, and we dont need it
+meta = meta[!colnames(meta) == "Notes"]
+# Subset to just samples in our final df
+meta_clean = meta[meta$Sample %in% rownames(phage_df_norm),]
+
+```
+
+# Basic look at phage_df + total normalized coverage
+```{r}
+meta_virome_cov = meta_clean %>%
+  mutate("Bee_Type" = paste(Bee, Type, sep = "\n")) %>% 
+  mutate("coverage" = rowSums(phage_df_norm)) %>%
+  dplyr::select(Sample, Type, Bee, Bee_Type, coverage)
+
+# Make a color pal
+library(RColorBrewer)
+bee_col_pal = palette(value = c("#B3CDE3",
+                                "#1F78B4", 
+                                "#FED9A6",
+                                "#FF7F00"))
+
+# plot it!
+cov = ggplot(meta_virome_cov, aes(x = Bee_Type, y = coverage, fill = Bee_Type)) + 
+  geom_boxplot() + 
+  scale_y_log10() +
+  scale_color_manual(values = bee_col_pal) + 
+  scale_fill_manual(values = alpha(bee_col_pal, alpha = 0.75)) +
+  xlab("") +
+  ylab("Total coverage") +
+  theme_minimal() +
+  theme(plot.title = element_text(hjust = 0.5), 
+        text = element_text(size = 25), 
+        legend.position = "none")
+```
+
+# Alpha diversity plots
+```{r}
+### Make a presence/absence df
+phage_df_pres_abs = phage_df_norm
+phage_df_pres_abs[phage_df_pres_abs > 0] = 1 
+
+# Plot an alpha diversity plot
+## Calculate Shannon's diversity
+library(vegan)
+meta_clean_new = meta_clean %>%
+  mutate("shannon" = diversity(x = phage_df_norm, index = "shannon")) %>%
+  mutate("n_phage" = rowSums(phage_df_pres_abs)) %>%
+  mutate("Bee_Type" = paste(Bee, Type, sep = "\n")) %>% 
+  dplyr::select(Sample, Type, Bee, Bee_Type, shannon, n_phage, Hive_ID)
+
+# Shannon diversity plot
+shan = ggplot(meta_clean_new, aes(x = Bee_Type, y = shannon, fill = Bee_Type)) + 
+  geom_boxplot() + 
+  scale_color_manual(values = bee_col_pal) + 
+  scale_fill_manual(values = alpha(bee_col_pal, alpha = 0.75)) +
+  xlab("") +
+  ylab("Shannon's diversity") +
+  theme_minimal() +
+  theme(plot.title = element_text(hjust = 0.5), 
+        text = element_text(size = 25), 
+        legend.position = "none")
+
+# Richness plot
+rich = ggplot(meta_clean_new, aes(x = Bee_Type, y = n_phage, fill = Bee_Type)) + 
+  geom_boxplot() + 
+  scale_y_log10() +
+  scale_color_manual(values = bee_col_pal) + 
+  scale_fill_manual(values = alpha(bee_col_pal, alpha = 0.75)) +
+  xlab("") + 
+  ylab("Number of phage") +
+  theme_minimal()  +
+  theme(plot.title = element_text(hjust = 0.5), 
+        text = element_text(size = 25), 
+        legend.position = "none")
+
+# Test em
+library(lme4)
+library(lmerTest)
+shan_model = lmer(shannon ~ Bee*Type + (1|Hive_ID), data = meta_clean_new)
+summary(shan_model)
+#                         Estimate Std. Error      df t value Pr(>|t|)    
+# (Intercept)               1.9565     0.1654  5.9324  11.826  2.4e-05 ***
+# BeeHoney bee              0.5063     0.2340  5.9324   2.164  0.07417 .  
+# TypeVirome               -0.6799     0.2839 16.0000  -2.395  0.02922 *  
+# BeeHoney bee:TypeVirome   2.0427     0.4015 16.0000   5.088  0.00011 ***
+
+rich_model = lmer(n_phage ~ Bee*Type + (1|Hive_ID), data = meta_clean_new)
+summary(rich_model)
+
+# (Intercept)               16.000      3.385  20.000   4.726 0.000129 ***
+# BeeHoney bee               3.556      4.728  20.000   0.752 0.460838    
+# TypeVirome                -5.667      6.687  20.000  -0.847 0.406791    
+# BeeHoney bee:TypeVirome  181.111      9.457  20.000  19.151 2.47e-14 ***
+``` 
+
+# Venn/Euller diagram
+```{r}
+library(VennDiagram)
+library(ggvenn)
+library(eulerr)
+# List of phage in each group
+# Honey bees
+honey_bee_total = phage_df_pres_abs[rownames(phage_df_pres_abs) %in% 
+                                subset(meta_clean$Sample, 
+                                        meta_clean$Bee == "Honey bee" &
+                                        meta_clean$Type == "Total"),]
+honey_bee_virome = phage_df_pres_abs[rownames(phage_df_pres_abs) %in% 
+                                subset(meta_clean$Sample, 
+                                        meta_clean$Bee == "Honey bee" &
+                                        meta_clean$Type == "Virome"),]
+# Bumble bees
+bumble_bee_total = phage_df_pres_abs[rownames(phage_df_pres_abs) %in% 
+                                subset(meta_clean$Sample, 
+                                        meta_clean$Bee == "Bumble bee" &
+                                        meta_clean$Type == "Total"),]
+bumble_bee_virome = phage_df_pres_abs[rownames(phage_df_pres_abs) %in% 
+                                subset(meta_clean$Sample, 
+                                        meta_clean$Bee == "Bumble bee" &
+                                        meta_clean$Type == "Virome"),]
+
+# Drop phage which are not present
+honey_bee_total_pres = honey_bee_total[colSums(honey_bee_total) > 0]
+honey_bee_virome_pres = honey_bee_virome[colSums(honey_bee_virome) > 0]
+bumble_bee_total_pres = bumble_bee_total[colSums(bumble_bee_total) > 0]
+bumble_bee_virome_pres = bumble_bee_virome[colSums(bumble_bee_virome) > 0]
+
+# Then extract names
+honey_bee_total_names = names(honey_bee_total_pres)
+honey_bee_virome_names = names(honey_bee_virome_pres)
+bumble_bee_total_names = names(bumble_bee_total_pres)
+bumble_bee_virome_names = names(bumble_bee_virome_pres)
+
+# All together?
+bee_col_pal = palette(value = c("#B3CDE3",
+                                "#1F78B4", 
+                                "#FED9A6",
+                                "#FF7F00"))
+
+big_list = list(`Honey Total` = honey_bee_total_names,
+          `Honey Virome` = honey_bee_virome_names, 
+          `Bumble Total` = bumble_bee_total_names,
+          `Bumble Virome` = bumble_bee_virome_names)
+fit_big = euler(big_list, by = list(`Honey Total`,
+                                    `Honey Virome`,
+                                    `Bumble Total`,
+                                    `Bumble Virome`),
+            shape = "ellipse")
+euler = plot(fit_big,
+     fills = list(fill = c("#FED9A6", "#FF7F00", "#B3CDE3", "#1F78B4"), alpha = 0.75),
+     quantities = list(cex = 1.75, col = "black"),
+     #legend = list(labels = c("Honey Total", "Honey Virome", "Bumble Total", "Bumble Virome")),
+     labels = NULL,
+     edges = NULL,
+     legend = F)
+```
+
+# Beta diversity
+```{r}
+# Corce meta to match phage df again
+meta_clean = meta_clean[order(match(meta_clean$Sample, rownames(phage_df_norm))),]
+# make new meta
+meta_clean_nmds = meta_clean %>%
+  mutate("Bee_Type" = paste(Bee, Type, sep = " ")) %>% 
+  dplyr::select(Sample, Type, Bee, Bee_Type, Hive_ID)
+
+
+bee_col_pal = palette(value = c("#B3CDE3",
+                                "#1F78B4", 
+                                "#FED9A6",
+                                "#FF7F00"))
+
+# Lets add a color to the meta data
+meta_clean_nmds$nmds_col = ifelse(meta_clean_nmds$Bee_Type == "Bumble bee Total", "#B3CDE3",
+                              ifelse(meta_clean_new$Bee_Type == "Bumble bee Virome", "#1F78B4",
+                                     ifelse(meta_clean_new$Bee_Type == "Honey bee Total", "#FED9A6", "#FF7F00")))
+# Add a shape (should we want it)
+meta_clean_nmds$nmds_shape = ifelse(meta_clean_nmds$Type == "Total", 19, 17)
+
+# Now its time for nmds!
+BC.nmds = metaMDS(phage_df_norm, distance="bray", k=2, trymax=1000)
+# extract data for use in ggplot
+# Make a nicer plot
+data.scores <- as.data.frame(scores(BC.nmds, "sites"))  
+data.scores$site <- rownames(data.scores)  
+data.scores$Bee <- meta_clean_nmds$Bee  
+data.scores$Type <- meta_clean_nmds$Type 
+data.scores$Bee_Type <- meta_clean_nmds$Bee_Type 
+head(data.scores)  
+
+beta = ggplot(data.scores, aes(x=NMDS1, y=NMDS2, col=Bee_Type)) + 
+  geom_point(size=7.5) + 
+  scale_colour_manual(values=bee_col_pal) +
+  geom_point(shape = 1,size = 7.5,colour = "black") + 
+  theme_minimal() +
+  ylim(-2.5,4) + 
+  xlim(-7,7) + 
+  ggtitle("Bray-Curtis Dissimilarity") +
+  theme(text = element_text(size = 15), 
+        plot.title = element_text(hjust = 0.5), 
+        legend.position = "none") 
+
+# Test it
+rownames(phage_df_norm) == meta_clean_nmds$Sample
+perms = with(meta_clean_nmds, how(nperm = 10000, blocks = Hive_ID))
+
+adonis2(phage_df_norm ~ Bee*Type, data = meta_clean_nmds, method = "bray", permutations = perms)
+
+#          Df SumOfSqs      R2      F Pr(>F)    
+# Bee       1   2.0790 0.20955 7.3877  3e-04 ***
+# Type      1   1.1068 0.11157 3.9332  3e-04 ***
+# Bee:Type  1   1.1070 0.11158 3.9336  3e-04 ***
+# Residual 20   5.6282 0.56730                  
+# Total    23   9.9209 1.00000          
+```
+
+# Put them together
+```{r}
+# legend
+legend = meta_clean_new %>% 
+  ggplot(aes(Bee_Type, 1, col = Bee_Type)) +
+  geom_point(size = 5) +
+  scale_color_manual(values = bee_col_pal) +
+  theme_bw() +
+  theme(text = element_text(size = 15),
+        legend.position = "top", 
+        title = element_blank()) +
+  guides(col = guide_legend(nrow = 2))
+
+
+library(cowplot)
+top_left = cowplot::plot_grid(shan, rich, get_legend(legend),
+                              ncol = 1,
+                              labels = c("A", "B", ""), 
+                              rel_heights = c(10, 10, 0.5),
+                              rel_widths = c(10, 10, 0.5),
+                              label_size = 20)
+
+top = cowplot::plot_grid(top_left, euler, 
+                         ncol = 2, 
+                         rel_heights = c(5, 7.5),
+                         labels = c("", "C"), label_size = 20)
+
+bottom = cowplot::plot_grid(beta, 
+                            ncol = 1, 
+                            rel_heights = c(1,9),
+                            labels = "D", label_size = 20)
+
+final = cowplot::plot_grid(top, bottom, 
+                           nrow = 2, 
+                           rel_heights = c(5, 5))
+
+pdf(file = "/Users/dinosbardellati/Desktop/PhD_stuff/projects/Bee_phage/5kb/reviewer_comments/coverM_redo/output_files/alpha_beta.pdf", width = 25, height = 20)
+final
+dev.off()
+```

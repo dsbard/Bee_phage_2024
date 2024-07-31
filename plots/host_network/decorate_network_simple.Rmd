@@ -1,0 +1,345 @@
+---
+title: "decorate_network"
+author: "DLS"
+date: "2024-06-02"
+output: html_document
+---
+
+# There are a couple of different goals here
+# First and foremost, we want to make a pretty network
+# We will do this by taking the c1.ntw object created by Vcontact and adding usefull info to it (mostly via for loops)
+  # First, we want to add host prediction to the network
+    # Specifically...
+    # 1) If we successfully assigned a host to a phage using CRISPR, we will use the phage_host dataset to assign host taxonomy in the network
+    # 2) If a phage does not have a predicted CRISPR host, we will bin its host as "unassigned"
+# Load and clean data
+```{r}
+# Making a pretty network
+# Read in network
+no_ref = read.table("/Users/dinosbardellati/Desktop/PhD_stuff/projects/Bee_phage/5kb/reviewer_comments/network/no_ref/c1.ntw",
+         header = F)
+
+# Breifly, we want to add a column that tells what study a particular phage came from 
+library(dplyr)
+no_ref = no_ref %>%
+  mutate(Study = ifelse(grepl("rosso", no_ref$V1), "bonilla-rosso", 
+                        ifelse(grepl("deboutte", no_ref$V1), "deboutte", 
+                               ifelse(grepl("busby", no_ref$V1), "busby", "sbardellati"))))
+# Fix names
+colnames(no_ref) = c("Source", "Target", "Weight", "Study")
+no_ref$Source = gsub(pattern = "annotate_", "", x = no_ref$Source)
+no_ref$Target = gsub(pattern = "annotate_", "", x = no_ref$Target)
+```
+
+# Add Host assignments, taxonomy, and clusters
+```{r}
+# Load additional data
+## host prediction
+phage_host = read.csv("/Users/dinosbardellati/Desktop/PhD_stuff/projects/Bee_phage/5kb/reviewer_comments/crispr/all_phage_host_table.csv",
+                      header = T)
+## Taxonomy prediction
+phage_tax = read.csv("/Users/dinosbardellati/Desktop/PhD_stuff/projects/Bee_phage/5kb/reviewer_comments/taxonomy/viral_taxonomy.csv", header = T, row.names = 1)
+## Cluster assignment
+clusters = read.csv("/Users/dinosbardellati/Desktop/PhD_stuff/projects/Bee_phage/5kb/reviewer_comments/network/no_ref/genome_by_genome_overview.csv")
+clusters$Genome = gsub("annotate_", "", x = clusters$Genome)
+clusters_clean = clusters %>% 
+  dplyr::select(Genome, VC)
+
+# Add data to network object
+no_ref_host_tax_clust = no_ref %>%
+  left_join(phage_host, join_by(Source == phage)) %>%
+  left_join(phage_tax, join_by(Source == vOTU)) %>%
+  left_join(clusters_clean, join_by(Source == Genome))
+```
+
+# Add an aditional column that is Host_study
+## This will allow us to "grey out" previously described phage in our eventual network
+```{r}
+final_df = no_ref_host_tax_clust %>%
+  mutate(host_study = paste(host, Study, sep = "_"))
+```
+
+# Export df
+```{r}
+# export it
+# write.csv(final_df, "/Users/dinosbardellati/Desktop/PhD_stuff/projects/Bee_phage/5kb/reviewer_comments/network/network_object.csv", row.names = F, quote = F)
+```
+
+# Now lets try and improve our assignemnts using clusters predicted by vContact
+## If a phage with an unassigned host is in a cluster with phage that have assigned host, give the unassigned phage the assigned host
+    # We will only do this for unambiguous clusters (i.e. clusters that only have one assigned host)
+    # If a cluster contains phage with more than one predicted host, all phage will retain their original host predictions + unassigned phage will remain unassigned
+# Update proposed hosts using cluster info
+```{r}
+# Now lets use another loop to classify the host of phage which are unassigned 
+# If an unassigned phage clusters with an assigned one, give it the assigned's host
+line = c()
+clust = c()
+all_clust = c()
+clust_hosts = c()
+new_host = c()
+out = c()
+# for testing clust = "VC_7_0"
+for (i in 1:nrow(final_df)) {
+  # Go line by line through the df
+  line = final_df[i,]
+  # and pull each cluster from the line
+  clust = line$VC
+    if (clust == "") { # if the phage in question is a singleton
+      new_host = line$host # dont change its host
+    } else {
+  # then subset the whole df to just that cluster
+  all_clust = final_df[final_df$VC == as.character(clust),]
+  # and pull out the unique host names
+  clust_hosts = unique(all_clust$host)
+  # next, a series of if else statements:
+  # If there is an unassigned host in this VC... 
+  if (NA %in% clust_hosts) {
+    # And if there is only the unnassigned host
+    if (length(clust_hosts) == 1) {
+      # then make the "new" host variable = to NA
+      new_host = NA
+      # Otherwise...
+    } else{
+      # Drop the "NA" variable from the list of hosts in the cluster
+      new_host = clust_hosts[-which(is.na(clust_hosts))]
+      # Then, if there is more than 1 host in the list of hosts...
+      if (length(new_host) > 1) {
+        # Keep the old assigned host for that line (this is a cluster with more than one host in it)
+        new_host = line$host
+        # Otherwise (only one host remains in the list of hosts)....
+      } else {
+        # Assign the remaining host 
+        new_host = new_host
+      }
+    }
+  } else{
+    new_host = line$host
+  }
+    }
+  out = c(out, new_host)
+}
+# Add a new host col based on the results of this loop
+updated_host = final_df
+updated_host$host_2 = out
+```
+# check our work
+```{r}
+# After using clusters to assign hosts, are there any clusters with more than one host assigned to them?
+# Select just the important cols
+updated_host_sub = updated_host %>%
+  dplyr::select(Source, host, host_2, VC)
+# Drop singletons (so they are not interpreted as a cluster)
+updated_host_sub_no_sing = updated_host_sub[!updated_host_sub$VC == "",]
+# aggregate and look at result
+# VC = name of viral cluster, Count = number of hosts present
+updated_host_sub_no_sing %>%
+  dplyr::group_by(VC) %>% 
+  dplyr::summarise(count = n_distinct(host_2)) %>%
+  dplyr::arrange(desc(count))
+# two cluster have more than one host in them!
+# VC_4_0 and VC_254_0 have more than one host assigned
+
+# Take a peak at these
+# VC_4_0
+VC_4_0 = updated_host_sub_no_sing[updated_host_sub_no_sing$VC == "VC_4_0",]
+unique(VC_4_0$Source)
+unique(VC_4_0$host_2)
+# 5 different phage in cluster
+# Contains phage from our study and from busby
+# Target unassigned"  "Gilliamella" "Serratia" 
+
+
+# VC_254_0
+VC_254_0 = updated_host_sub_no_sing[updated_host_sub_no_sing$VC == "VC_254_0",]
+unique(VC_254_0$Source)
+unique(VC_254_0$host_2)
+# 2 phage in cluster
+# Contains only phage from our study
+# Target Bifidobacterium" "Lactobacillus"  
+
+# Two clusters are "ambiguous" -- Doesn't seem that bad 
+```
+
+# Repeat process, but with phage taxonomy
+```{r}
+# set Family == NA to Family == ""
+updated_host_fam_fix = updated_host %>%
+  mutate(Family_fix = ifelse(is.na(Family), "", Family))
+
+# Now lets use another loop to classify the host of phage which are unassigned 
+# If an unassigned phage clusters with an assigned one, give it the assigned's host
+line = c()
+clust = c()
+all_clust = c()
+clust_fam = c()
+new_fam = c()
+out = c()
+# for testing clust = "VC_7_0"
+for (i in 1:nrow(updated_host_fam_fix)) {
+  # Go line by line through the df
+  line = updated_host_fam_fix[i,]
+  # and pull each cluster from the line
+  clust = line$VC
+    if (clust == "") { # if the phage in question is a singleton
+      new_fam = line$Family_fix # dont change its host
+    } else {
+  # then subset the whole df to just that cluster
+  all_clust = updated_host_fam_fix[updated_host_fam_fix$VC == as.character(clust),]
+  # and pull out the unique host names
+  clust_fam = unique(all_clust$Family_fix)
+  # next, a series of if else statements:
+  # If there is an unassigned host in this VC... 
+  if ("" %in% clust_fam) {
+    # And if there is only the unnassigned host
+    if (length(clust_fam) == 1) {
+      # then make the "new" host variable = to ""
+      new_fam = ""
+      # Otherwise...
+    } else{
+      # Drop the "NA" variable from the list of hosts in the cluster
+      new_fam = clust_fam[-which(clust_fam == "")]
+      # Then, if there is more than 1 host in the list of hosts...
+      if (length(new_fam) > 1) {
+        # Keep the old assigned host for that line (this is a cluster with more than one host in it)
+        new_fam = line$Family_fix
+        # Otherwise (only one host remains in the list of hosts)....
+      } else {
+        # Assign the remaining host 
+        new_fam = new_fam
+      }
+    }
+  } else{
+    new_fam = line$Family_fix
+  }
+    }
+  out = c(out, new_fam)
+}
+# Add a new host col based on the results of this loop
+updated_host_tax = updated_host_fam_fix
+updated_host_tax$Family_2 = out
+
+```
+# check our work
+```{r}
+# After using clusters to assign hosts, are there any clusters with more than one host assigned to them?
+# Select just the important cols
+updated_host_tax_sub = updated_host_tax %>%
+  dplyr::select(Source, Family_fix, Family_2, VC)
+# Drop singletons (so they are not interpreted as a cluster)
+updated_host_tax_sub_no_sing = updated_host_tax_sub[!updated_host_tax_sub$VC == "",]
+# aggregate and look at result
+# VC = name of viral cluster, Count = number of hosts present
+updated_host_tax_sub_no_sing %>%
+  dplyr::group_by(VC) %>% 
+  dplyr::summarise(count = n_distinct(Family_2)) %>%
+  dplyr::arrange(desc(count))
+# No ambiguous taxonomy clusters
+```
+
+# Clean and export dfs
+```{r}
+# Select just the cols we want
+cleaned_final = updated_host_tax %>%
+  dplyr::select(Source, Target, Weight, Study, VC, Class, Family_2, host_2) %>%
+  mutate(Family = Family_2) %>%
+  mutate(Host = host_2) %>%
+  mutate(Host_study = paste(host_2, Study, sep = " ")) %>%
+  dplyr::select(Source, Target, Weight, Study, VC, Class, Family, Host, Host_study)
+# export it
+# write.csv(cleaned_final, "/Users/dinosbardellati/Desktop/PhD_stuff/projects/Bee_phage/5kb/reviewer_comments/network/network_object_clustered.csv", row.names = F, quote = F)
+
+updated_phage_host_tax = cleaned_final %>%
+  mutate(Phage = Source) %>%
+  dplyr::select(Phage, Host, Family) %>%
+  unique() %>%
+  replace_na(list(Host = "", Family = ""))
+
+# export it
+# write.csv(updated_phage_host_tax, "/Users/dinosbardellati/Desktop/PhD_stuff/projects/Bee_phage/5kb/reviewer_comments/Phage_host_analysis/updated_host_and_taxonomy.csv", na = "")
+```
+
+# Lets quickly check out our clusters to try and find one to run through clinker
+```{r}
+cleaned_final %>%
+  dplyr::group_by(VC) %>%
+  dplyr::summarise(n=n_distinct(Study)) %>%
+  arrange(desc(n)) 
+
+# These clusters contain phage from all studies
+# "VC_138_0"     4
+# "VC_13_0"      4
+# "VC_149_0"     4
+# "VC_18_0"      4
+# "VC_22_0"      4
+# "VC_26_0"      4
+# "VC_35_0"      4
+# "VC_85_0"      4
+
+# VC_138
+cleaned_final %>% 
+  filter(VC == "VC_138_0") %>%
+  dplyr::group_by(VC) %>%
+  dplyr::summarise(n=n_distinct(Source))
+# has 11 vOTUs
+VC_138 = cleaned_final %>% 
+  filter(VC == "VC_138_0") %>%
+  select(Source) %>%
+  unique()
+write.table(VC_138, "/Users/dinosbardellati/Desktop/PhD_stuff/projects/Bee_phage/5kb/reviewer_comments/clinker/VC_138.csv", sep = ",", col.names = F, quote = F, row.names = F)
+
+# VC_13
+cleaned_final %>% 
+  filter(VC == "VC_13_0") %>%
+  dplyr::group_by(VC) %>%
+  dplyr::summarise(n=n_distinct(Source))
+# has 32 vOTUs
+
+# VC_149
+cleaned_final %>% 
+  filter(VC == "VC_149_0") %>%
+  dplyr::group_by(VC) %>%
+  dplyr::summarise(n=n_distinct(Source))
+# has 9 vOTUs
+VC_149 = cleaned_final %>% 
+  filter(VC == "VC_149_0") %>%
+  select(Source) %>%
+  unique()
+write.table(VC_149, "/Users/dinosbardellati/Desktop/PhD_stuff/projects/Bee_phage/5kb/reviewer_comments/clinker/VC_149.csv", sep = ",", col.names = F, quote = F, row.names = F)
+
+# VC_18
+cleaned_final %>% 
+  filter(VC == "VC_18_0") %>%
+  dplyr::group_by(VC) %>%
+  dplyr::summarise(n=n_distinct(Source))
+# has 34 vOTUs
+VC_18 = cleaned_final %>% 
+  filter(VC == "VC_18_0") %>%
+  select(Source) %>%
+  unique()
+write.table(VC_18, "/Users/dinosbardellati/Desktop/PhD_stuff/projects/Bee_phage/5kb/reviewer_comments/clinker/VC_18.csv", sep = ",", col.names = F, quote = F, row.names = F)
+
+# VC_22_0
+cleaned_final %>% 
+  filter(VC == "VC_22_0") %>%
+  dplyr::group_by(VC) %>%
+  dplyr::summarise(n=n_distinct(Source))
+# has 6 vOTUs
+VC_22 = cleaned_final %>% 
+  filter(VC == "VC_22_0") %>%
+  select(Source) %>%
+  unique()
+write.table(VC_22, "/Users/dinosbardellati/Desktop/PhD_stuff/projects/Bee_phage/5kb/reviewer_comments/clinker/VC_22.csv", sep = ",", col.names = F, quote = F, row.names = F)
+
+# VC_35_0
+cleaned_final %>% 
+  filter(VC == "VC_35_0") %>%
+  dplyr::group_by(VC) %>%
+  dplyr::summarise(n=n_distinct(Source))
+# has 14 vOTUs
+VC_35 = cleaned_final %>% 
+  filter(VC == "VC_35_0") %>%
+  select(Source) %>%
+  unique()
+write.table(VC_35, "/Users/dinosbardellati/Desktop/PhD_stuff/projects/Bee_phage/5kb/reviewer_comments/clinker/VC_35.csv", sep = ",", col.names = F, quote = F, row.names = F)
+```

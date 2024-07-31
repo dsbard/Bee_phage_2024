@@ -1,0 +1,3 @@
+Pseudomonas_GCF_003975415.1_spacer_0	virome_phage_754	94.444	18	1	0	15	32	30210	30227	0.76	26.9
+Pseudomonas_GCF_003975415.1_spacer_0	virome_phage_46	86.364	22	3	0	9	30	18517	18538	0.76	26.9
+Pseudomonas_GCF_003975415.1_spacer_1	virome_phage_48	83.333	24	4	0	7	30	41334	41311	0.76	26.9

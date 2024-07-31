@@ -1,0 +1,363 @@
+---
+title: "Making_third_plots"
+author: "DLS"
+date: "2023-12-18"
+output: html_document
+---
+
+# Load Packages
+```{r}
+library(tidyverse)
+library(reshape2)
+library(cowplot)
+library(Rmisc)
+```
+
+# Load in data + calc rela abund
+```{r}
+# Read in vOTU table
+vOTU_table = readRDS("/Users/dinosbardellati/Desktop/PhD_stuff/projects/Bee_phage/5kb/reviewer_comments/coverage_table/5kb_phage_normalized.RDS")
+# Read in meta table + clean a bit
+meta = read.csv("/Users/dinosbardellati/Desktop/PhD_stuff/projects/Bee_phage/5kb/reviewer_comments/coverage_table/Bee_phage_meta.csv", header = T)
+## Drop negatives
+meta_virome = meta[meta$Sample %in% rownames(vOTU_table),]
+
+## Calc relative abundance table
+phage_df_rela = (vOTU_table/rowSums(vOTU_table))*100
+```
+
+# Host taxonomy
+```{r}
+##### Make host assignment object ##### 
+# Load in phage host_df
+phage_host = read.csv("/Users/dinosbardellati/Desktop/PhD_stuff/projects/Bee_phage/5kb/reviewer_comments/Phage_host_analysis/updated_host_and_taxonomy.csv")
+# Make al ist of all vOTU names
+vOTU_phage = data.frame("vOTU_phage" = colnames(vOTU_table))
+
+# Filter phage_host df to only those phage which occur in vOTU table
+### (removes "known" phage and some phage which didnt make it into final vOTU table)
+phage_host_clean = phage_host %>%
+  filter(Phage %in% vOTU_phage$vOTU_phage)
+
+## Merge the two dfs together
+vOTU_phage_host = vOTU_phage %>% 
+  left_join(phage_host_clean, join_by("vOTU_phage" == "Phage")) %>%
+  replace_na(list(Host = "")) %>% # if a vOTU phage is not present in phage_host_clean, make its host ""
+  replace_na(list(Family = "")) # repeat with the tax col
+vOTU_phage_host$Host = ifelse(vOTU_phage_host$Host == "", "Unassigned", vOTU_phage_host$Host)
+vOTU_phage_host$Family = ifelse(vOTU_phage_host$Family == "", "Unassigned", vOTU_phage_host$Family)
+dim(vOTU_phage_host)
+##### Done ##### 
+
+##### Add meta data and host assignment to vOTU relative abundance table ##### 
+# Add sample as col to vOTU rel abund table
+phage_df_clean = phage_df_rela
+phage_df_clean$sample = rownames(phage_df_clean)
+phage_df_clean$sample = as.factor(phage_df_clean$sample)
+
+abund_meta_host = meta %>%
+  filter(Type != "Negative") %>%
+  dplyr::select(Sample, Hive_ID, Type, Bee, clean_names) %>%
+  left_join(phage_df_clean, join_by("Sample" == "sample")) %>%
+  melt(id = c("Sample", "Hive_ID", "Type", "Bee", "clean_names")) %>%
+  left_join(vOTU_phage_host, join_by("variable" == "vOTU_phage"))
+
+# Make a new df which calculates the sumative abundance of each phage targeting group in each sample
+## (i.e. sum the relative abundance of all lactobacillus targeting phage in a single sample)
+host_sum = data.frame(abund_meta_host %>%
+  dplyr::group_by(Sample, Bee, Type, Hive_ID, Host, clean_names) %>%
+  dplyr::summarise(sum = sum(value)))
+##### Done ##### 
+
+##### Find most abundant host targeting group ##### 
+# Phage targeting which groups of bacteria are the most abundant?
+## (this is sum across whole df)
+abund_meta_host %>%
+  group_by(Host) %>%
+  dplyr::summarize(sum = sum(value, na.rm=TRUE)) %>%
+  arrange(desc(sum))
+# Lets pull the top 6 (7 with unassigned) hosts from this (after this it drops from ~10% to 1% accross the entire df)
+top = c("Unassigned",        
+"Lactobacillus",     
+"Gilliamella",       
+"Bifidobacterium",
+"Acinetobacter",
+"Schmidhempelia",
+"Bombilactobacillus")
+# Now we will make an "other" category
+## Any phage which does not target a bacteria in this "top" bin will be tossed into the "other" category
+host_sum$Host = ifelse(host_sum$Host %in% top, host_sum$Host, "Other")
+ 
+##### Done ##### 
+
+##### Now we are ready to plot ##### 
+# I lied, first we coerce some characters into factors, make a col to order stacked bars on, and then fix order of host assignments
+host_sum_fix = host_sum %>%
+  mutate(Type = factor(Type, levels=c("Virome", "Total"))) %>%
+  mutate(Bee = factor(Bee, levels=c("Honey bee", "Bumble bee"))) %>%
+  mutate(Order = as.numeric(str_split_fixed(Sample, "_", 3)[,3])) %>%
+  mutate(Host = factor(Host, levels=c(        
+"Lactobacillus",     
+"Gilliamella",       
+"Bifidobacterium",
+"Acinetobacter",
+"Schmidhempelia",
+"Bombilactobacillus",
+"Other",
+"Unassigned")))
+
+# Make a new pal to color by
+stacked_pal = palette(c("#8B9DD5",          
+                        "#64C5B3",
+                        "#FDAB5E",
+                        "#8BD48E",
+                        "#C57777",
+                        "#DB8CFD",
+                        "#C593AF",
+                        "#7D807E"))
+
+# Now we plot!
+stacked_host_tax = ggplot(host_sum_fix, aes(x = reorder(clean_names, Order), y = sum, fill = Host)) + 
+  geom_bar(stat = "identity") +
+  facet_wrap(~Bee+Type, scales = "free_x") +
+  scale_fill_manual(values = stacked_pal) + 
+  xlab("") +
+  ylab("Relative abundance") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust=1, color = "black", size = 15),
+        strip.text = element_text(size = 20, color = "black")) 
+
+legend = data.frame(host = c(        
+"Lactobacillus",     
+"Gilliamella",       
+"Bifidobacterium",
+"Acinetobacter",
+"Schmidhempelia",
+"Bombilactobacillus",
+"Other",
+"Unassigned",,
+"Previously Described"))
+
+legend$host = factor(legend$host, levels = c(        
+"Lactobacillus",     
+"Gilliamella",       
+"Bifidobacterium",
+"Acinetobacter",
+"Schmidhempelia",
+"Bombilactobacillus",
+"Other",
+"Unassigned",
+"Previously Described"))
+
+legend_pal = palette(c("#8B9DD5",          
+                        "#64C5B3",
+                        "#FDAB5E",
+                        "#8BD48E",
+                        "#C57777",
+                        "#DB8CFD",
+                        "#C593AF",
+                        "#7D807E",
+                        "#acadad"))
+# #acadad <-- this will be for "Previously described phage"
+
+legend_plot = ggplot(legend, aes(x = ordered(host), 1, col = host)) +
+  geom_point(size = 5) +
+  scale_color_manual(values = legend_pal) +
+  theme_bw() +
+  theme(text = element_text(size = 15)) + 
+  guides(col=guide_legend(title="Host"))
+library(cowplot)
+
+plot_grid(get_legend(legend_plot), stacked_host_tax + theme(legend.position = "none"),
+          rel_widths = c(5, 10),
+          rel_heights =c (10, 5))
+##### Done ##### 
+```
+
+# Write data to be exported as table 
+```{r}
+# this is the df which has the data we are interested in
+head(host_sum_fix)
+# We want to aggregated this df based on the interaction of Bee_Type and host_2
+## (i.e. what is the abundance of these different taxa in honey bee total metagenomes vs honey bee viromes)
+# We also need to get rid of the multiple occurrences of"other" in each sample. 
+## This was fine for plotting, but will mess with our average calculations
+
+# Collapse "other group"
+host_sum_fix_new = host_sum_fix %>% 
+  dplyr::group_by(Sample, Bee, Type, Host, Hive_ID) %>%
+  dplyr::summarise(abund = sum(sum)) 
+# Add new col 
+host_sum_fix_new_int = as.data.frame(host_sum_fix_new %>% 
+  mutate(Bee_type = paste(Bee, Type)))
+# Select just the cols we want
+host_sum_cleaned = host_sum_fix_new_int %>% 
+  dplyr::select(Bee_type, Host, abund)
+# Calc summary stats
+library(Rmisc)
+host_sum_tab = summarySE(data = host_sum_cleaned, 
+          measurevar = "abund", 
+          groupvars = c("Bee_type", "Host"))
+write.csv(x = host_sum_tab, file = "/Users/dinosbardellati/Desktop/PhD_stuff/projects/Bee_phage/5kb/reviewer_comments/Phage_host_analysis/host_sum_table.csv")
+
+library(lme4)
+library(lmerTest)
+library(emmeans)
+
+# Lacto
+lacto = lmer(abund ~ Bee*Type + (1|Hive_ID), 
+             data = host_sum_fix_new,
+             subset = Host == "Lactobacillus")
+summary(lacto)
+# no sig
+
+#                         Estimate Std. Error      df t value Pr(>|t|)  
+# (Intercept)               21.019      8.656  14.548   2.428   0.0287 *
+# BeeBumble bee            -16.981     12.241  14.548  -1.387   0.1863  
+# TypeTotal                  8.911      8.599  16.000   1.036   0.3155  
+# BeeBumble bee:TypeTotal   -2.454     12.161  16.000  -0.202   0.8426  
+
+# Gilli
+gilli = lmer(abund ~ Bee*Type + (1|Hive_ID), 
+             data = host_sum_fix_new,
+             subset = Host == "fdr")
+summary(gilli)
+x = emmeans(gilli, c("Bee", "Type"))
+pairs(x, adjust="fdr")
+
+ # contrast                             estimate    SE    df t.ratio p.value
+ # Honey bee Virome - Bumble bee Virome     6.63 11.26 13.55   0.589  0.6789
+ # Honey bee Virome - Honey bee Total     -21.90  7.69 16.00  -2.849  0.0357
+ # Honey bee Virome - Bumble bee Total      6.63  9.86  9.50   0.672  0.6789
+ # Bumble bee Virome - Honey bee Total    -28.53  9.86  9.50  -2.892  0.0357
+ # Bumble bee Virome - Bumble bee Total     0.00  7.69 16.00   0.000  1.0000
+ # Honey bee Total - Bumble bee Total      28.53  8.23  5.02   3.465  0.0357
+
+# Bifido
+bifido = lmer(abund ~ Bee*Type + (1|Hive_ID), 
+             data = host_sum_fix_new,
+             subset = Host == "Bifidobacterium")
+summary(bifido)
+x = emmeans(bifido, c("Bee", "Type"))
+pairs(x, adjust="fdr")
+
+# contrast                             estimate   SE    df t.ratio p.value
+# Honey bee Virome - Bumble bee Virome   24.294 3.71 19.69   6.548  <.0001
+# Honey bee Virome - Honey bee Total     18.116 3.03 16.00   5.980  <.0001
+# Honey bee Virome - Bumble bee Total    23.347 3.03 16.79   7.707  <.0001
+# Bumble bee Virome - Honey bee Total    -6.179 3.03 16.79  -2.040  0.0689
+# Bumble bee Virome - Bumble bee Total   -0.947 3.03 16.00  -0.313  0.7585
+# Honey bee Total - Bumble bee Total      5.231 2.14  6.92   2.442  0.0675
+
+# Bombilacto
+bombi = lmer(abund ~ Bee*Type + (1|Hive_ID), 
+             data = host_sum_fix_new,
+             subset = Host == "Bombilactobacillus")
+summary(bombi)
+# no sig
+
+# Schmid
+schmid = lmer(abund ~ Bee*Type + (1|Hive_ID), 
+             data = host_sum_fix_new,
+             subset = Host == "Schmidhempelia")
+summary(schmid)
+# no sig
+
+# contrast                             estimate    SE    df t.ratio p.value
+# Honey bee Virome - Bumble bee Virome     0.00 1.082 19.69   0.000  1.0000
+# Honey bee Virome - Honey bee Total       0.00 0.884 16.00   0.000  1.0000
+# Honey bee Virome - Bumble bee Total     -2.42 0.884 16.79  -2.737  0.0293
+# Bumble bee Virome - Honey bee Total      0.00 0.884 16.79   0.000  1.0000
+# Bumble bee Virome - Bumble bee Total    -2.42 0.884 16.00  -2.737  0.0293
+# Honey bee Total - Bumble bee Total      -2.42 0.625  6.92  -3.870  0.0293
+
+# acineto
+acineto = lmer(abund ~ Bee*Type + (1|Hive_ID), 
+             data = host_sum_fix_new,
+             subset = Host == "Acinetobacter")
+summary(acineto)
+# no sig
+```
+
+# Phage taxonomy plot (supplemental)
+```{r}
+##### Make a plotable df #####
+# Drop unassigned
+vOTU_tax = vOTU_phage_host[!vOTU_phage_host$Family %in% c("Unassigned"),]
+# set levels
+vOTU_tax$tax = factor(vOTU_tax$Family , levels = c("Rountreeviridae",
+                                                "Herelleviridae",
+                                                "Inoviridae",
+                                                "Totiviridae",
+                                                "Autographiviridae",
+                                                "Microviridae"))
+
+tax_pal = palette(c("#E69F00",
+                    "#56B4E9",
+                    "#009E73",
+                    "#D55E00",
+                    "#0072B2",
+                    "#e41a1c",
+                    "#7D807E"))
+# plot it
+phage_tax = ggplot(vOTU_tax, aes(tax, fill = Family)) +
+  geom_bar() +
+  scale_fill_manual(values = tax_pal) +
+  theme_minimal() +
+  xlab("") +
+  ylab("Frequency") +
+  theme(plot.title = element_text(hjust = 0.5), 
+        text = element_text(size = 25), 
+        axis.text.x = element_text(angle = 45, vjust = 1, hjust=1),
+        legend.position = "right")
+
+
+tax_legend = plot_grid(get_legend(ggplot(vOTU_tax, aes(tax, fill = tax)) +
+  geom_bar() +
+  theme_minimal() +
+  xlab("Phage genus") +
+  ylab("Frequency") +
+  scale_fill_manual("Phage Family", values = tax_pal) + 
+  xlab("") +
+  theme_minimal() +
+  theme(plot.title = element_text(hjust = 0.5), 
+        text = element_text(size = 25), 
+        axis.text.x = element_text(angle = 45, vjust = 1, hjust=1),
+        legend.position = "left")))
+
+
+
+
+# We've already done a lot of the leg work for this!
+## get sum of different groups
+# Make a new df which calculates the sumative abundance of each phage targeting group in each sample
+## (i.e. sum the relative abundance of all lactobacillus targeting phage in a single sample)
+tax_sum = data.frame(abund_meta_host %>%
+  dplyr::group_by(Sample, Bee, Type, Family) %>%
+  dplyr::summarise(sum = sum(value))) %>%
+  mutate(Type = factor(Type, levels=c("Virome", "Total"))) %>%
+  mutate(Bee = factor(Bee, levels=c("Honey bee", "Bumble bee"))) %>%
+  mutate(Order = as.numeric(str_split_fixed(Sample, "_", 3)[,3]))
+
+stacked_tax = ggplot(tax_sum, aes(x = reorder(Sample, Order), y = sum, fill = Family)) + 
+  geom_bar(stat = "identity") +
+  scale_fill_manual(values = tax_pal) +
+  facet_wrap(~Bee+Type, scales = "free_x") +
+  xlab("") +
+  ylab("Relative abundance") +
+  theme_minimal() +
+  theme(plot.title = element_text(hjust = 0.5), 
+        text = element_text(size = 25), 
+        axis.text.x = element_text(angle = 45, vjust = 1, hjust=1))
+##### Done ##### 
+
+
+
+# Have to add temperate phage to our network object too!
+## Network .csv is here
+network = read.csv("/Users/dinosbardellati/Desktop/PhD_stuff/projects/Bee_phage/5kb/network/all_phage_final_network_lifestyle.csv")
+network$tax_study = paste(network$tax, network$Study, sep = "_")
+# write it out as new df
+# write.csv(network, "/Users/dinosbardellati/Desktop/PhD_stuff/projects/Bee_phage/5kb/network/all_phage_final_network_fixed.csv",
+#       quote = F)
+```

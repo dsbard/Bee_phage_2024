@@ -1,0 +1,2 @@
+Bacillus_GCF_001054655.1_spacer_0	virome_phage_28	86.957	23	3	0	1	23	33751	33729	0.38	28.5
+Bacillus_GCF_001054655.1_spacer_0	total_phage_188	86.957	23	3	0	13	35	6019	5997	0.38	28.5

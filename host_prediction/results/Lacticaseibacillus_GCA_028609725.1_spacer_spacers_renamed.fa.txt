@@ -1,0 +1,16 @@
+Lacticaseibacillus_GCA_028609725.1_spacer_0	total_phage_92	90.000	20	2	0	11	30	41700	41681	0.76	26.9
+Lacticaseibacillus_GCA_028609725.1_spacer_0	total_phage_231	90.000	20	2	0	11	30	23734	23715	0.76	26.9
+Lacticaseibacillus_GCA_028609725.1_spacer_0	virome_phage_884	86.364	22	3	0	1	22	20682	20703	0.76	26.9
+Lacticaseibacillus_GCA_028609725.1_spacer_0	virome_phage_16	78.571	28	6	0	1	28	85052	85079	0.76	26.9
+Lacticaseibacillus_GCA_028609725.1_spacer_0	total_phage_3	78.571	28	6	0	1	28	24680	24707	0.76	26.9
+Lacticaseibacillus_GCA_028609725.1_spacer_1	virome_phage_98	90.476	21	2	0	2	22	11153	11173	0.25	28.5
+Lacticaseibacillus_GCA_028609725.1_spacer_2	virome_phage_41	81.481	27	5	0	5	31	33486	33512	0.25	28.5
+Lacticaseibacillus_GCA_028609725.1_spacer_2	virome_phage_271	100.000	16	0	0	13	28	2495	2480	0.76	26.9
+Lacticaseibacillus_GCA_028609725.1_spacer_2	total_phage_692	80.769	26	5	0	4	29	5425	5400	0.76	26.9
+Lacticaseibacillus_GCA_028609725.1_spacer_2	total_phage_658	80.769	26	5	0	4	29	40477	40502	0.76	26.9
+Lacticaseibacillus_GCA_028609725.1_spacer_3	virome_phage_3	91.304	23	2	0	1	23	121776	121754	0.028	31.7
+Lacticaseibacillus_GCA_028609725.1_spacer_3	virome_phage_84	78.571	28	6	0	6	33	9651	9678	0.76	26.9
+Lacticaseibacillus_GCA_028609725.1_spacer_3	total_phage_99	86.364	22	3	0	6	27	21664	21685	0.76	26.9
+Lacticaseibacillus_GCA_028609725.1_spacer_3	total_phage_98	86.364	22	3	0	6	27	10261	10240	0.76	26.9
+Lacticaseibacillus_GCA_028609725.1_spacer_3	total_phage_930	86.364	22	3	0	6	27	18006	18027	0.76	26.9
+Lacticaseibacillus_GCA_028609725.1_spacer_3	total_phage_782	86.364	22	3	0	6	27	9621	9600	0.76	26.9

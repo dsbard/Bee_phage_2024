@@ -1,0 +1,8 @@
+Bifidobacterium_GCA_030460745.1_spacer_3	virome_phage_740	87.500	24	3	0	12	35	34192	34215	0.13	30.1
+Bifidobacterium_GCA_030460745.1_spacer_3	virome_phage_60	90.909	22	2	0	4	25	35360	35339	0.13	30.1
+Bifidobacterium_GCA_030460745.1_spacer_3	virome_phage_2355	90.909	22	2	0	4	25	19550	19571	0.13	30.1
+Bifidobacterium_GCA_030460745.1_spacer_3	virome_phage_21	87.500	24	3	0	12	35	2467	2444	0.13	30.1
+Bifidobacterium_GCA_030460745.1_spacer_3	virome_phage_2255	90.476	21	2	0	4	24	22957	22977	0.38	28.5
+Bifidobacterium_GCA_030460745.1_spacer_3	virome_phage_19	86.957	23	3	0	11	33	41577	41555	0.38	28.5
+Bifidobacterium_GCA_030460745.1_spacer_4	virome_phage_21	81.481	27	5	0	6	32	66270	66296	0.38	28.5
+Bifidobacterium_GCA_030460745.1_spacer_4	virome_phage_740	81.481	27	5	0	6	32	84061	84035	0.38	28.5

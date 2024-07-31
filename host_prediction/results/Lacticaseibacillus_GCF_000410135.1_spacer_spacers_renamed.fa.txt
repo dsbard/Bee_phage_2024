@@ -1,0 +1,5 @@
+Lacticaseibacillus_GCF_000410135.1_spacer_0	virome_phage_773	100.000	16	0	0	4	19	25002	25017	0.76	26.9
+Lacticaseibacillus_GCF_000410135.1_spacer_0	virome_phage_1	94.444	18	1	0	6	23	14417	14400	0.76	26.9
+Lacticaseibacillus_GCF_000410135.1_spacer_0	total_phage_364	94.444	18	1	0	11	28	21672	21655	0.76	26.9
+Lacticaseibacillus_GCF_000410135.1_spacer_1	total_phage_361	86.957	23	3	0	9	31	17039	17061	0.25	28.5
+Lacticaseibacillus_GCF_000410135.1_spacer_1	total_phage_791	86.957	23	3	0	9	31	25148	25126	0.25	28.5

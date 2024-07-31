@@ -1,0 +1,1 @@
+Companilactobacillus_GCF_003946515.1_spacer_1	total_phage_2	86.957	23	3	0	11	33	3812	3790	0.50	28.5

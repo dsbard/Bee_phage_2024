@@ -1,0 +1,112 @@
+---
+title: "crispr_processing"
+author: "DLS"
+date: "2024-06-02"
+output: html_document
+---
+
+# Repeat with "all_phage"
+# Load data in
+```{r}
+setwd("/Users/dinosbardellati/Desktop/PhD_stuff/projects/Bee_phage/5kb/reviewer_comments/crispr")
+all_phage = read.table(file = "crispr_spacer_results.txt", header = F)
+colnames(all_phage) = c("host", "phage", "perc_id", 
+                         "align_len", "n_mis", "n_gap", 
+                         "q_start", "q_end", "s_start", "s_end",
+                         "e-val", "score")
+```
+
+# Initial processing and cleaning up
+```{r}
+# we have to fix one accession
+all_phage[grepl("GCF_000471645.3", all_phage$host),]
+# run replacement
+all_phage$host = gsub(pattern = "GCF_000471645.3", 
+     replacement = "Schmidhempelia_GCF_000471645.3", 
+     x = all_phage$host)
+# Then check it worked
+all_phage[grepl("GCF_000471645.3", all_phage$host),]
+
+# Lets add an accession col
+library(tidyverse)
+host = str_split(string = all_phage$host, pattern = "_", n = 2, simplify = T)[,1]
+# Do the same with accession
+access = str_split(string = all_phage$host, pattern = "_", n = 2, simplify = T)[,2]
+access_clean = paste(str_split(string = access, pattern = "_", n = 3, simplify = T)[,1],
+                 str_split(string = access, pattern = "_", n = 3, simplify = T)[,2],
+                 sep = "_")
+# make nice n clean df
+phage_host_df = data.frame("host" = host, 
+           "accession" = access_clean, 
+           "phage" = all_phage$phage,
+           all_phage[3:12])
+# Subset down to hits with 100% ID and a min size of 30 bp
+phage_host_df_100 = phage_host_df %>% 
+  filter(perc_id == 100) %>%
+  filter(align_len >= 30)
+# How many were dropped?
+dim(phage_host_df) - dim(phage_host_df_100)
+# lost 1303352
+# count em up
+dim(phage_host_df_100)
+# 1971 rows (bacterial genome-phage pairs)
+# Thats a lot!
+
+# How many phage mapped to MAGs we generated?
+dim(phage_host_df_100 %>%
+  filter(grepl('bin', accession)))
+# 45 of the phage hits came from MAGs we generated
+# I thought it would be more
+# Look at the breakdown of CRISPRs from MAGs we generated
+plyr::count(data.frame(phage_host_df_100 %>%
+  filter(grepl('bin', accession)))$host)
+# Bombilactobacillus   16
+#        Gilliamella   17
+#      Lactobacillus    8
+#     Schmidhempelia    4
+```
+
+# Identify "ambiguous" phage (phage which hit to multiple host genera)
+```{r}
+# Do any phage have multiple host genera as hits?
+phage_host_df_100 %>%
+  dplyr::select(host, phage) %>%
+  dplyr::group_by(phage) %>%
+  dplyr::summarise(count = n_distinct(host)) %>%
+  arrange(desc(count))
+# No ambiguous!
+```
+# Make phage-host table for further use
+```{r}
+# Okay, lets make a simple phage-host object that we can use later
+phage_host_df_no_acc = phage_host_df_100 %>%
+  dplyr::select(host, phage)
+# Then find "unique" phage-host pairs
+phage_host_df_no_acc_uni = unique(phage_host_df_no_acc)
+dim(phage_host_df_no_acc_uni)
+# 188/609
+# So we assigned hosts to 725 of our individual phage genomes
+# That is 30.87%
+# doesnt seem super high, but I think it is pretty good comapred to the literature
+
+# who are the most prevalent?
+plyr::count(phage_host_df_no_acc_uni$host)
+#                  x freq
+#      Acinetobacter    2
+#    Bifidobacterium   68
+# Bombilactobacillus    4
+#        Gilliamella   36
+# Lacticaseibacillus    1
+#      Lactobacillus   66
+#        Pseudomonas    3
+#     Schmidhempelia    4
+#           Serratia    4
+
+# Save output
+write.csv(phage_host_df_no_acc_uni, "all_phage_host_table.csv", 
+          quote = F, row.names = F)
+
+# lets also export the larger df for other work
+write.csv(phage_host_df_100, "all_phage_host_table_big.csv",
+          quote = F, row.names = F)
+```

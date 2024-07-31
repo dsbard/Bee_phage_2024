@@ -1,0 +1,12 @@
+Companilactobacillus_GCF_015566135.1_spacer_0	virome_phage_784	82.143	28	5	0	1	28	4935	4962	0.084	30.1
+Companilactobacillus_GCF_015566135.1_spacer_1	total_phage_4	100.000	17	0	0	13	29	8333	8317	0.25	28.5
+Companilactobacillus_GCF_015566135.1_spacer_1	total_phage_111	100.000	17	0	0	13	29	89231	89247	0.25	28.5
+Companilactobacillus_GCF_015566135.1_spacer_3	virome_phage_49	87.500	24	3	0	4	27	6340	6363	0.084	30.1
+Companilactobacillus_GCF_015566135.1_spacer_3	total_phage_5	90.476	21	2	0	5	25	12322	12342	0.25	28.5
+Companilactobacillus_GCF_015566135.1_spacer_3	virome_phage_773	86.364	22	3	0	7	28	32924	32903	0.76	26.9
+Companilactobacillus_GCF_015566135.1_spacer_3	virome_phage_751	90.000	20	2	0	7	26	70007	69988	0.76	26.9
+Companilactobacillus_GCF_015566135.1_spacer_4	virome_phage_925	86.364	22	3	0	4	25	6817	6838	0.76	26.9
+Companilactobacillus_GCF_015566135.1_spacer_4	virome_phage_878	100.000	16	0	0	1	16	25412	25427	0.76	26.9
+Companilactobacillus_GCF_015566135.1_spacer_4	virome_phage_734	86.364	22	3	0	8	29	153032	153053	0.76	26.9
+Companilactobacillus_GCF_015566135.1_spacer_4	total_phage_518	90.000	20	2	0	4	23	6719	6738	0.76	26.9
+Companilactobacillus_GCF_015566135.1_spacer_4	virome_phage_17	90.000	20	2	0	8	27	67378	67359	0.76	26.9

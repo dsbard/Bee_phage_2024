@@ -1,0 +1,1 @@
+Pseudomonas_GCF_003671895.1_spacer_3	total_phage_790	84.615	26	4	0	9	34	94829	94854	0.36	30.1
