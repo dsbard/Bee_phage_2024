@@ -1,5 +1,5 @@
 # Bee_phage_2024
-This repository contains code and files generated for the publication "**Targeted Viromes and Total Metagenomes Capture Distinct Components of Bee Gut Microbiomes**" [DOI GO HERE]. Sequence read files can be accessed from the NCBI SRA under the bioproject PRJNA1072153. 
+This repository contains code and files generated for the publication "**Targeted Viromes and Total Metagenomes Capture Distinct Components of Bee Gut Microbiomes**" [https://doi.org/10.1186/s40168-024-01875-0]. Sequence read files can be accessed from the NCBI SRA under the bioproject PRJNA1072153. 
 
 
 ![plot](DLS_bee_phage.jpg)
